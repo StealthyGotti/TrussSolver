@@ -132,6 +132,16 @@
     }
     return items;
   }
+  // Elastic stiffness of each restrained component of a support.
+  function supportDetails(n) {
+    const axes = Mechanics.supportAxes[n.support];
+    if (!axes.length)
+      return '';
+    const springs = [['kx', 'k orizzontale [EJ/b³]'], ['ky', 'k verticale [EJ/b³]'], ['kr', 'k rotazionale [EJ/b]']];
+    return '<details' + (axes.some(d => n[springs[d][0]]) ? ' open' : '') +
+        '><summary>Molle del vincolo</summary><p class="help">Rigidezza della molla interposta fra nodo e terreno. Il valore 0 indica un vincolo rigido.</p><div class="props">' +
+        axes.map(d => field(springs[d][0], springs[d][1], n[springs[d][0]] || 0)).join('') + '</div></details>';
+  }
   function inspector() {
     const o = obj(), isNode = selection[0] === 'n', isEdge = selection[0] === 'e';
     const choices = [
@@ -143,7 +153,7 @@
     if (isNode) {
       html += '<span class="cap">Geometria</span><div class="props">' + field('x', 'x [b]', o.x) +
           field('y', 'y [b]', o.y) + '</div><span class="cap">Vincolo esterno</span>' +
-          select('support', 'Tipo di appoggio', Object.entries(supports), o.support) +
+          select('support', 'Tipo di appoggio', Object.entries(supports), o.support) + supportDetails(o) +
           '<span class="cap">Carichi nodali</span><div class="props">' + field('fx', 'H [F]', o.fx) +
           field('fy', 'V [F]', o.fy) + field('m', 'Coppia W ↺ [Fb]', o.m) + '</div>';
     } else if (isEdge) {
@@ -209,7 +219,7 @@
       const key = input.dataset.prop, numeric = input.hasAttribute('data-numeric');
       const value = numeric ? NumericDisplay.parse(input.value) : input.type === 'checkbox' ? input.checked : input.value;
       if (numeric && (!Number.isFinite(value) || (['ei', 'ea'].includes(key) && value <= 0) ||
-          (['springI', 'springJ'].includes(key) && value < 0))) {
+          (['springI', 'springJ', 'kx', 'ky', 'kr'].includes(key) && value < 0))) {
         input.setCustomValidity('Inserisci un decimale o una frazione valida. EA ed EJ devono essere positivi e le molle hanno rigidezza positiva o nulla.');
         input.reportValidity();
         input.oninput = () => input.setCustomValidity('');
@@ -465,7 +475,8 @@
       const ids = new Set();
       for (const n of m.nodes) {
         if (!n || typeof n.id !== 'string' || !/^[A-Za-z0-9_-]{1,14}$/.test(n.id) || ids.has(n.id) ||
-            !Object.hasOwn(supports, n.support) || ![n.x, n.y, n.fx, n.fy, n.m].every(Number.isFinite))
+            !Object.hasOwn(supports, n.support) || ![n.x, n.y, n.fx, n.fy, n.m].every(Number.isFinite) ||
+            ![n.kx, n.ky, n.kr].every(k => k === undefined || (Number.isFinite(k) && k >= 0)))
           throw Error();
         ids.add(n.id);
       }

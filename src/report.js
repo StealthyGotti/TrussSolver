@@ -206,13 +206,18 @@ const Report = (() => {
                                        ...[p.bend, p.axial, p.imposed, p.spring, p.total,
                                            ...r.workX[i].map(a => a[k].total)]
                                            .map(fmt)])
+                              .concat(r.support0[i].map((p, k) => [
+                                'Molla del vincolo ' + p.label, '', '', '', fmt(p.spring), fmt(p.total),
+                                ...r.supportX[i].map(a => fmt(a[k].total))
+                              ]))
                               .concat([
                                 ['Somma', '', '', '', '', fmt(r.delta[i]), ...r.flexibility[i].map(fmt)]
                               ]))}</details>`)
               .join('');
       body = `<h3>1. Scelta della struttura principale</h3>${
           formulas}<h3>2. Congruenza lungo i rilasci</h3><p>Il lavoro virtuale del servizio i misura lo spostamento o la rotazione relativa lungo il rilascio. Ripristinando il vincolo, tale grandezza deve annullarsi.</p>
-      <div class="formula">δᵢ₀ + Σⱼ fᵢⱼ Xⱼ = 0<br>δᵢ₀ = Σ ∫₀ᴸ [Mᵢ M₀/EJ + Nᵢ N₀/EA + Nᵢ ε₀ + Mᵢ κ₀] ds + Σₘ Mᵢ M₀/kₘ<br>fᵢⱼ = Σ ∫₀ᴸ [Mᵢ Mⱼ/EJ + Nᵢ Nⱼ/EA] ds + Σₘ Mᵢ Mⱼ/kₘ</div>
+      <div class="formula">δᵢ₀ + Σⱼ fᵢⱼ Xⱼ = 0<br>δᵢ₀ = Σ ∫₀ᴸ [Mᵢ M₀/EJ + Nᵢ N₀/EA + Nᵢ ε₀ + Mᵢ κ₀] ds + Σₘ Mᵢ M₀/kₘ + Σᵥ Rᵢ R₀/kᵥ<br>fᵢⱼ = Σ ∫₀ᴸ [Mᵢ Mⱼ/EJ + Nᵢ Nⱼ/EA] ds + Σₘ Mᵢ Mⱼ/kₘ + Σᵥ Rᵢ Rⱼ/kᵥ</div>
+      <p class="help">Le somme su m riguardano le molle rotazionali fra asta e nodo, quelle su v le molle dei vincoli a terra, dove R è la reazione nel verso della molla.</p>
       <p class="help">${
           model.axial ?
               'Deformabilità assiale e flessionale attive.' :

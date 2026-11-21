@@ -25,6 +25,8 @@ const Mechanics = (() => {
         fail('Gli identificativi dei nodi devono essere univoci e alfanumerici.');
       if (![n.x, n.y, n.fx, n.fy, n.m].every(finite) || !Object.hasOwn(supportAxes, n.support))
         fail('Controlla coordinate, vincoli e carichi nodali.');
+      if (![n.kx, n.ky, n.kr].every(k => k === undefined || (finite(k) && k >= 0)))
+        fail('Le molle dei vincoli richiedono rigidezze positive. Il valore 0 indica un vincolo rigido.');
       indices.set(n.id, i);
     }
     const pairs = new Set();
@@ -277,10 +279,25 @@ const Mechanics = (() => {
         return {bend, axial, imposed, spring, total: bend + axial + imposed + spring};
       });
     }
+    // Elastic supports: the node moves by −R/k, so the work of the virtual reaction adds R'R/k.
+    function supportWork(u, v) {
+      return descriptors.flatMap((d, j) => {
+        if (d.kind !== 'r' || d.artificial)
+          return [];
+        const n = nodes[d.k], k = [n.kx, n.ky, n.kr][d.d] || 0;
+        if (!k)
+          return [];
+        const spring = u.vector[j] * v.vector[j] / k;
+        return [{label: d.label, node: n.id, spring, total: spring}];
+      });
+    }
     const sum = terms => terms.reduce((s, t) => s + t.total, 0);
     const work0 = service.map(u => work(u, primary, true));
     const workX = service.map(u => service.map(v => work(u, v, false)));
-    const delta = work0.map(sum), flexibility = workX.map(row => row.map(sum));
+    const support0 = service.map(u => supportWork(u, primary, true));
+    const supportX = service.map(u => service.map(v => supportWork(u, v, false)));
+    const delta = work0.map((terms, i) => sum(terms) + sum(support0[i]));
+    const flexibility = workX.map((row, i) => row.map((terms, j) => sum(terms) + sum(supportX[i][j])));
     const system = flexibility.map((row, i) => [...row, -delta[i]]);
     const solution = reduce(system, free.length);
     if (solution.pivots.length !== free.length)
@@ -302,6 +319,8 @@ const Mechanics = (() => {
       flexibility,
       work0,
       workX,
+      support0,
+      supportX,
       X,
       floating
     };

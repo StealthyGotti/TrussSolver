@@ -41,7 +41,7 @@ const Draft = (() => {
   // External restraint drawn as on the exam sheets. axes lists the restrained components
   // (0 = H, 1 = V, 2 = W), (ox, oy) points from the node towards the ground and central
   // tells that the node itself is already drawn as a hinge.
-  function support(x, y, axes, ox, oy, central) {
+  function support(x, y, axes, ox, oy, central, spring = false) {
     if (!axes.length)
       return '';
     const hatch = (at, half) => {
@@ -65,9 +65,12 @@ const Draft = (() => {
       // Cerniera a terra.
       return turned + line(0, pin + 4, 0, pin + 11, green, 2.4) + plate(pin + 11, 13) + hatch(pin + 12.5, 13) +
           hinge + '</g>';
-    // Carrello.
+    // Carrello, with a spring between its plate and the ground when the support is elastic.
+    const base = pin + 12.4, wall = spring ? base + 15 : base;
+    const coil = spring ? path(`M 0 ${base} ` + [1, 2, 3, 4, 5, 6].map(k => `L ${k % 2 ? 5 : -5} ${base + k * 2.1}`).join(' ') +
+        ` L 0 ${wall}`, green, 'none', 1.3) + plate(base, 9) : '';
     return turned + circle(-3.7, pin + 7.6, 3.2, green, '#fff', 1.3) + circle(3.7, pin + 7.6, 3.2, green, '#fff', 1.3) +
-        plate(pin + 12.4, 13) + hatch(pin + 13.9, 13) + hinge + '</g>';
+        coil + plate(wall, 13) + hatch(wall + 1.5, 13) + hinge + '</g>';
   }
   // Sliding connection between a member end and its node. (mx, my) points from the node
   // into the member and (dx, dy) is the free sliding direction, both in screen axes.
@@ -334,7 +337,7 @@ const Draft = (() => {
         const free = axes.length === 3 || (axes.length === 2 && !axes.includes(2)) ? sides :
             sides.filter(d => (axes.includes(0) && !axes.includes(1)) === (d[0] !== 0));
         const [ox, oy] = outward(n.id, [x, y], free);
-        symbols += support(x, y, axes, ox, oy, centralHinges.has(n.id));
+        symbols += support(x, y, axes, ox, oy, centralHinges.has(n.id), axes.some(d => [n.kx, n.ky, n.kr][d]));
       }
       if (showLoads && realLoads) {
         symbols += pointLoad(x, y, n.fx, 0, caption(n.fx, 'F'), (x-w/2)*n.fx>0) +

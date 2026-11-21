@@ -231,3 +231,23 @@ test('Doppio pendolo esterno: blocca rotazione e una traslazione', () => {
   near(value(cantilever, 'r/B/1'), q * L);
   near(Math.abs(value(cantilever, 'r/B/2')), q * L * L / 2);
 });
+test('Molla traslazionale sotto il carrello di una mensola puntellata', () => {
+  const q = 3, L = 4, k = 5 / 7, m = span({qy: -q}, 'fixed', 'rollerY');
+  m.nodes[1].ky = k;
+  m.release = 'r/B/1';
+  const r = solve(m), X = q * L ** 4 / 8 / (L ** 3 / 3 + 1 / k);
+  near(r.delta[0], -q * L ** 4 / 8);
+  near(r.flexibility[0][0], L ** 3 / 3 + 1 / k);
+  near(r.supportX[0][0][0].spring, 1 / k);
+  near(r.X[0], X);
+  // The same answer with another unknown: the spring then enters the known term too.
+  m.release = 'r/A/2';
+  const other = solve(m);
+  near(value(other, 'r/B/1'), X);
+  assert.ok(Math.abs(other.support0[0][0].spring) > 0);
+  // A stiff spring tends to the rigid roller, a soft one to the cantilever.
+  m.nodes[1].ky = 1e9;
+  near(value(solve(m), 'r/B/1'), 3 * q * L / 8 * (1 - 3 / (1e9 * L ** 3 + 3)));
+  m.nodes[1].ky = -1;
+  assert.throws(() => solve(m), /molle dei vincoli/);
+});
