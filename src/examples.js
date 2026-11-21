@@ -89,7 +89,25 @@ const Models = (() => {
       beam('F', 'C', {hj: true}), beam('F', 'G', {hj: true}), beam('G', 'H'), beam('H', 'E', {qx: -1, hj: true})
     ]
   };
-  return {node, beam, examples: [firstExam, inclinedRoller, springSupport, internalSliders]};
+  // Tema 13: cedimento verticale imposto in I, carrello interno in F, asta inclinata FE lunga √5 b.
+  const settlement = {
+    title: 'Tema 13 · Cedimento imposto e asta inclinata',
+    ref: {b: 340, F: 460},
+    grid: 1,
+    axial: false,
+    release: 'r/G/1',
+    nodes: [
+      node('A', 0, 1, 'free', {fy: 2}), node('B', 2, 1), node('C', 2, 2), node('D', 4, 2), node('E', 6, 2),
+      node('F', 4, 1), node('G', 2, 0, 'rollerY'), node('H', 4, 0, 'rollerX', {m: 1}),
+      node('I', 6, 1, 'pin', {uy: 3})
+    ],
+    members: [
+      beam('A', 'B'), beam('B', 'C', {qx: 5, hi: true}), beam('C', 'D'), beam('D', 'E'),
+      beam('F', 'E', {hi: true, slideI: 'incl', slideIdx: 1, slideIdy: 0}), beam('B', 'G'),
+      beam('G', 'H', {kappa: 4}), beam('H', 'F'), beam('F', 'I')
+    ]
+  };
+  return {node, beam, examples: [firstExam, inclinedRoller, springSupport, internalSliders, settlement]};
 })();
 if (typeof module !== 'undefined')
   module.exports = Models;

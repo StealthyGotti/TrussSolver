@@ -69,3 +69,22 @@ test('Tema 8: doppio pendolo a terra, carrello con molla traslazionale e asta in
   near(r.final.vector[r.descriptors.findIndex(d => d.label === 'V_A')], -239 / 1056);
   near(r.supportX[0][0][0].spring, 0);
 });
+
+test('Tema 13: cedimento imposto in I, carrello interno in F e asta lunga √5 b', () => {
+  const r = solve(exam(13));
+  assert.equal(r.X.length, 1);
+  assert.equal(unknown(r), 'V_G');
+  near(r.X[0], -59 / 8);
+  near(r.delta[0], 295 / 6);
+  near(r.flexibility[0][0], 20 / 3);
+  // The settlement enters the known term with the work of the virtual reaction, −V_I v_I = 3.
+  near(r.support0[0][0].settle, 3);
+  near(r.elements[4].L, Math.sqrt(5));
+  check(r, [
+    ['A/B', 0, 0, 4], ['B/C', 5 / 4, 0, 5 / 2], ['C/D', 0, 5 / 2, 0], ['D/E', 0, 0, -5 / 2],
+    ['F/E', -Math.sqrt(5) / 4, 0, 5 / 2], ['B/G', 13 / 4, 4, 9], ['G/H', -5, 9, 3 / 4],
+    ['H/F', 33 / 8, -1 / 4, 43 / 4], ['F/I', 11, 43 / 4, 0]
+  ]);
+  near(evaluate(r.final.fields[4].T, 0), Math.sqrt(5) / 2);
+  near(evaluate(r.final.fields[8].T, 0), -43 / 8);
+});
