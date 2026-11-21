@@ -216,3 +216,18 @@ test('Forza sul lato dell’asta in un pattino: resta sull’asta, sul lato del 
   near(evaluate(other.final.fields[0].M, 0), 0);
   near(value(other, 'r/B/1'), P);
 });
+
+// External supports of the exam sheets beyond pins, rollers and clamps.
+test('Doppio pendolo esterno: blocca rotazione e una traslazione', () => {
+  const q = 3, L = 4, r = solve(span({qy: -q}, 'fixed', 'sliderX')), f = r.final.fields[0];
+  assert.deepEqual(r.descriptors.filter(d => d.kind === 'r' && d.k === 1).map(d => d.label).sort(), ['H_B', 'W_B']);
+  near(evaluate(f.T, L), 0);
+  near(evaluate(f.M, 0), -q * L * L / 3);
+  near(evaluate(f.M, L), q * L * L / 6);
+  near(value(r, 'r/A/1'), q * L);
+  // Sliding horizontally, the support carries the vertical force and the couple of a cantilever tip.
+  const cantilever = solve(span({qy: -q}, 'rollerX', 'sliderY'));
+  assert.equal(cantilever.X.length, 0);
+  near(value(cantilever, 'r/B/1'), q * L);
+  near(Math.abs(value(cantilever, 'r/B/2')), q * L * L / 2);
+});

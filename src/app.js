@@ -34,6 +34,8 @@
     pin: 'Cerniera a terra',
     rollerY: 'Carrello · reazione verticale',
     rollerX: 'Carrello · reazione orizzontale',
+    sliderY: 'Doppio pendolo · scorre in orizzontale',
+    sliderX: 'Doppio pendolo · scorre in verticale',
     fixed: 'Incastro'
   };
   // Connection of a beam end to its node: [couple released, sliding mode].

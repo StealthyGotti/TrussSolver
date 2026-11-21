@@ -5,7 +5,10 @@ const Mechanics = (() => {
   const fail = message => {
     throw new Error(message);
   };
-  const supportAxes = {free: [], pin: [0, 1], rollerY: [1], rollerX: [0], fixed: [0, 1, 2]};
+  // Restrained components of each support: 0 = H, 1 = V, 2 = W. A double pendulum (slider)
+  // blocks the rotation and one translation.
+  const supportAxes =
+      {free: [], pin: [0, 1], rollerY: [1], rollerX: [0], sliderY: [1, 2], sliderX: [0, 2], fixed: [0, 1, 2]};
   // Free relative translation of a member end: along the member, across it or along an inclined plane.
   const slideModes = {'': () => null, axis: (c, s) => [c, s], normal: (c, s) => [-s, c], incl: () => null};
   const axis = ['H', 'V', 'W'];
