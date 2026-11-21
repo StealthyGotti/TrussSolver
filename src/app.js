@@ -36,6 +36,19 @@
     rollerX: 'Carrello · reazione orizzontale',
     fixed: 'Incastro'
   };
+  // Connection of a beam end to its node: [couple released, sliding mode].
+  const connections = {
+    rigid: [false, '', 'Continuo'],
+    hinge: [true, '', 'Cerniera'],
+    padNormal: [false, 'normal', 'Pattino · scorre di traverso all’asta'],
+    padAxis: [false, 'axis', 'Pattino · scorre lungo l’asta'],
+    padIncl: [false, 'incl', 'Pattino · piano inclinato'],
+    rollerNormal: [true, 'normal', 'Carrello · scorre di traverso all’asta'],
+    rollerAxis: [true, 'axis', 'Carrello · scorre lungo l’asta'],
+    rollerIncl: [true, 'incl', 'Carrello · piano inclinato']
+  };
+  const connectionOf = (e, end) => Object.keys(connections).find(
+      k => connections[k][0] === Boolean(e['h' + end.toLowerCase()]) && connections[k][1] === (e['slide' + end] || ''));
   const names = {select: 'Seleziona', node: 'Nodo', edge: 'Asta', pan: 'Mano'};
   const tips = {
     select: 'Seleziona un nodo o un’asta per modificarne le proprietà.',
@@ -136,10 +149,18 @@
       html += '<span class="cap">Tratteggio</span>' +
           select('fiberSide', 'Fibre tese per M positivo · ' + esc(o.a) + ' → ' + esc(o.b),
                  [['right','A destra'], ['left','A sinistra']], o.fiberSide);
-      if (o.type === 'beam')
-        html += check('hi', 'Cerniera in ' + esc(o.a), o.hi) + check('hj', 'Cerniera in ' + esc(o.b), o.hj) +
-            '<span class="cap">Carico uniforme · assi globali</span><div class="props">' +
+      if (o.type === 'beam') {
+        html += '<span class="cap">Collegamenti ai nodi</span>';
+        for (const [end, id] of [['I', o.a], ['J', o.b]]) {
+          html += select('conn' + end, 'In ' + esc(id), Object.entries(connections).map(([k, v]) => [k, v[2]]),
+                         connectionOf(o, end));
+          if (o['slide' + end] === 'incl')
+            html += '<div class="props">' + field('slide' + end + 'dx', 'Piano in ' + esc(id) + ' · Δx', o['slide' + end + 'dx']) +
+                field('slide' + end + 'dy', 'Δy', o['slide' + end + 'dy']) + '</div>';
+        }
+        html += '<span class="cap">Carico uniforme · assi globali</span><div class="props">' +
             field('qx', 'p lungo x [F/b]', o.qx) + field('qy', 'q lungo y [F/b]', o.qy) + '</div>';
+      }
       if (o.type === 'beam' && !(o.hi && o.hj))
         html +=
             '<details><summary>Molle rotazionali agli estremi</summary><p class="help">Rigidezza tra asta e nodo in EJ/b. Il valore 0 mantiene il collegamento rigido.</p><div class="props">' +
@@ -181,6 +202,20 @@
         return;
       }
       if (value === o[key]) return;
+      if (key === 'connI' || key === 'connJ') {
+        const end = key.at(-1), [hinge, slide] = connections[value];
+        change(() => {
+          o['h' + end.toLowerCase()] = hinge;
+          o['slide' + end] = slide;
+          if (slide === 'incl' && !Number.isFinite(o['slide' + end + 'dx']))
+            Object.assign(o, {['slide' + end + 'dx']: 1, ['slide' + end + 'dy']: 1});
+          if (hinge)
+            o['spring' + end] = 0;
+          if (!releaseList().some(([v]) => v === model.release))
+            model.release = '';
+        });
+        return;
+      }
       if (key === 'fiberSide') {
         remember();
         o.fiberSide = value;
@@ -194,7 +229,7 @@
         if (key === 'hj' && value)
           o.springJ = 0;
         if (key === 'type' && value === 'bar')
-          Object.assign(o, {qx: 0, qy: 0, kappa: 0, hi: false, hj: false, springI: 0, springJ: 0});
+          Object.assign(o, {qx: 0, qy: 0, kappa: 0, hi: false, hj: false, springI: 0, springJ: 0, slideI: '', slideJ: ''});
         if (!releaseList().some(([v]) => v === model.release))
           model.release = '';
       }, key === 'x' || key === 'y');
@@ -427,6 +462,11 @@
       for (const a of m.members) {
         if (a.fiberSide === undefined) a.fiberSide = 'right';
         if (!['left','right'].includes(a.fiberSide)) throw Error();
+        for (const end of ['I', 'J']) {
+          const mode = a['slide' + end];
+          if (![undefined, '', 'axis', 'normal', 'incl'].includes(mode)) throw Error();
+          if (mode === 'incl' && ![a['slide' + end + 'dx'], a['slide' + end + 'dy']].every(Number.isFinite)) throw Error();
+        }
       }
       // Version 1 files were written in kN and m: read them with F = 1 kN, b = 1 m and EJ = 1 kN·m².
       if (doc.version === 1) {

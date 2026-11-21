@@ -146,3 +146,47 @@ test('Sezione H dal campo finale, confronto con i risultati del tema', () => {
   assert.equal(h.maxStress.toFixed(1),'-219.1'); assert.equal(h.stress.toFixed(1),'-135.6');
   assert.equal(h.shear.toFixed(2),'15.87'); assert.equal(h.vonMises.toFixed(1),'138.3');
 });
+
+// Internal sliding connections between a member end and its node.
+function span(data, left = 'fixed', right = 'fixed') {
+  return {nodes: [node('A', 0, 0, left), node('B', 4, 0, right)], members: [beam('A', 'B', data)],
+    axial: true, release: ''};
+}
+test('Pattino trasversale: trave incastrata e guidata sotto carico uniforme', () => {
+  const q = 3, L = 4, r = solve(span({qy: -q, slideJ: 'normal'})), f = r.final.fields[0];
+  assert.equal(r.X.length, 2);
+  near(evaluate(f.T, L), 0);
+  near(evaluate(f.M, 0), -q * L * L / 3);
+  near(evaluate(f.M, L), q * L * L / 6);
+  near(value(r, 'r/B/1'), 0);
+  near(value(r, 'r/A/1'), q * L);
+});
+test('Pattino assiale: lo sforzo normale si annulla all’estremo che scorre', () => {
+  const p = 2, L = 4, r = solve(span({qx: p, qy: -1, slideI: 'axis'})), f = r.final.fields[0];
+  near(evaluate(f.N, 0), 0);
+  near(evaluate(f.N, L), -p * L);
+  near(value(r, 'r/A/0'), 0);
+  near(value(r, 'r/B/0'), -p * L);
+  // The transverse response is that of a beam fixed at both ends.
+  near(evaluate(f.M, 0), -L * L / 12);
+  near(evaluate(f.M, L / 2), L * L / 24);
+});
+test('Carrello interno su piano inclinato a 45°: reazione perpendicolare al piano', () => {
+  const q = 6, L = 4;
+  const r = solve(span({qy: -q, hj: true, slideJ: 'incl', slideJdx: 1, slideJdy: 1}, 'pin', 'fixed'));
+  assert.equal(r.X.length, 0);
+  near(value(r, 'r/B/1'), q * L / 2);
+  near(value(r, 'r/B/0'), -q * L / 2);
+  near(value(r, 'r/B/2'), 0);
+  near(value(r, 'r/A/0'), q * L / 2);
+  near(value(r, 'A/B/n'), -q * L / 2);
+  near(evaluate(r.final.fields[0].M, L / 2), q * L * L / 8);
+});
+test('Carrello interno che scorre lungo l’asta: trasmette solo il taglio', () => {
+  const r = solve(span({qy: -6, hj: true, slideJ: 'axis'}, 'pin', 'fixed'));
+  near(value(r, 'A/B/n'), 0);
+  near(value(r, 'r/B/1'), 12);
+  near(value(r, 'r/B/0'), 0);
+  assert.throws(() => solve(span({hi: true, slideI: 'axis', hj: true, slideJ: 'axis'})), /labile/);
+  assert.throws(() => solve({...span({}), members: [beam('A', 'B', {type: 'bar', slideI: 'axis'})]}), /Pattini/);
+});

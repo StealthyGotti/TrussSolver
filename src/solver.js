@@ -6,6 +6,8 @@ const Mechanics = (() => {
     throw new Error(message);
   };
   const supportAxes = {free: [], pin: [0, 1], rollerY: [1], rollerX: [0], fixed: [0, 1, 2]};
+  // Free relative translation of a member end: along the member, across it or along an inclined plane.
+  const slideModes = {'': () => null, axis: (c, s) => [c, s], normal: (c, s) => [-s, c], incl: () => null};
   const axis = ['H', 'V', 'W'];
   const unit = ['F', 'F', 'Fb'];
   function geometry(model) {
@@ -43,7 +45,22 @@ const Mechanics = (() => {
       }
       if (e.type === 'bar' && (e.qx || e.qy || e.kappa))
         fail('La biella ammette carichi solo ai nodi e deformazione iniziale assiale.');
-      return {...e, i, j, L, c: dx / L, s: dy / L, name: e.a + '–' + e.b, key: e.a + '/' + e.b};
+      const c = dx / L, s = dy / L;
+      // Unit vector along which an end may slide with respect to its node, or null.
+      const sliding = (mode = '', sx, sy) => {
+        if (!Object.hasOwn(slideModes, mode) || (mode && e.type === 'bar'))
+          fail('Pattini e carrelli interni si assegnano agli estremi delle travi.');
+        if (mode !== 'incl')
+          return slideModes[mode](c, s);
+        const norm = Math.hypot(sx, sy);
+        if (!finite(norm) || norm < 1e-9)
+          fail('Il piano di scorrimento inclinato richiede una direzione non nulla.');
+        return [sx / norm, sy / norm];
+      };
+      return {
+        ...e, i, j, L, c, s, name: e.a + '–' + e.b, key: e.a + '/' + e.b,
+        slides: [sliding(e.slideI, e.slideIdx, e.slideIdy), sliding(e.slideJ, e.slideJdx, e.slideJdy)]
+      };
     });
     const connected = new Set([0]);
     for (let k = 0; k < nodes.length; k++)
@@ -104,30 +121,47 @@ const Mechanics = (() => {
   }
   function solve(model) {
     const elements = geometry(model), {nodes} = model;
+    // Rows: three equilibrium equations per node, then one equation per sliding release.
     const descriptors = [], loads = nodes.flatMap(n => [n.fx, n.fy, n.m]);
-    const entry = (d, terms) => {
-      const col = zeros(loads.length);
-      for (const [r, v] of terms)
-        col[r] += v;
-      descriptors.push({...d, col});
-    };
+    const rowLabels = nodes.flatMap(n => ['ΣFx', 'ΣFy', 'ΣM'].map(t => n.id + ' · ' + t));
+    const entry = (d, terms) => descriptors.push({...d, terms});
     for (const [k, e] of elements.entries()) {
       const {i, j, c, s, L} = e;
+      const px = c * e.qx + s * e.qy, py = -s * e.qx + c * e.qy;
+      // Coefficients of N, M(0) and M(L) in the rows. Each row equates minus the
+      // forces that the unknowns apply to a node with the known loads on it.
+      const basic = {
+        n: [[3 * i, -c], [3 * i + 1, -s], [3 * j, c], [3 * j + 1, s]],
+        mi: [[3 * i, s / L], [3 * i + 1, -c / L], [3 * j, -s / L], [3 * j + 1, c / L], [3 * i + 2, -1]],
+        mj: [[3 * i, -s / L], [3 * i + 1, c / L], [3 * j, s / L], [3 * j + 1, -c / L], [3 * j + 2, 1]]
+      };
+      // Shear at the first end when the end moments vanish, under the uniform load.
+      const v = -py * L / 2;
+      e.slides.forEach((d, end) => {
+        if (!d)
+          return;
+        // The force passed to the node has no component along the sliding direction.
+        // At i it is N t − T(0) n, at j it is −N(L) t + T(L) n.
+        const td = c * d[0] + s * d[1], nd = -s * d[0] + c * d[1], sign = end ? -1 : 1;
+        const row = loads.length;
+        rowLabels.push(e.name + ' · scorrimento in ' + (end ? e.b : e.a));
+        loads.push(v * nd - (end ? px * L * td : 0));
+        basic.n.push([row, sign * td]);
+        basic.mi.push([row, sign * nd / L]);
+        basic.mj.push([row, -sign * nd / L]);
+      });
       // W_ab is the couple that the node applies to end a of member ab, positive counter-clockwise.
       // It equals −M(0) at the first end and +M(L) at the second one.
       const member = (kind, label, terms) =>
           entry({kind, k, id: e.key + '/' + kind, label, unit: kind === 'n' ? 'F' : 'Fb'}, terms);
-      member('n', 'N_' + e.a + e.b, [[3 * i, -c], [3 * i + 1, -s], [3 * j, c], [3 * j + 1, s]]);
+      member('n', 'N_' + e.a + e.b, basic.n);
       if (e.type === 'beam') {
-        const moments = [[3 * i, s / L], [3 * i + 1, -c / L], [3 * j, -s / L], [3 * j + 1, c / L]];
         if (!e.hi)
-          member('mi', 'W_' + e.a + e.b, [...moments, [3 * i + 2, -1]].map(([r, v]) => [r, -v]));
+          member('mi', 'W_' + e.a + e.b, basic.mi.map(([r, value]) => [r, -value]));
         if (!e.hj)
-          member('mj', 'W_' + e.b + e.a, [...moments.map(([r, v]) => [r, -v]), [3 * j + 2, 1]]);
+          member('mj', 'W_' + e.b + e.a, basic.mj);
       }
       // Known end actions for zero basic forces, under a uniform global load.
-      const px = c * e.qx + s * e.qy, py = -s * e.qx + c * e.qy;
-      const v = -py * L / 2;
       loads[3 * i] += s * v;
       loads[3 * i + 1] -= c * v;
       loads[3 * j] += c * px * L + s * v;
@@ -159,16 +193,21 @@ const Mechanics = (() => {
       fail('Il rilascio scelto non appartiene più al modello.');
     const priority = v => v.artificial ? -1 : v.id === requested ? 3 : v.kind === 'r' ? 2 : 0;
     descriptors.sort((a, b) => priority(a) - priority(b));
-    const count = descriptors.length, equations = [], rowLabels = [];
+    for (const d of descriptors) {
+      d.col = zeros(loads.length);
+      for (const [r, value] of d.terms)
+        d.col[r] += value;
+    }
+    const count = descriptors.length, equations = [], labels = [];
     for (let r = 0; r < loads.length; r++) {
       const row = descriptors.map(v => v.col[r]);
-      if (r % 3 === 2 && row.every(v => v === 0)) {
-        if (loads[r] !== 0)
+      if (r < 3 * nodes.length && r % 3 === 2 && row.every(v => v === 0)) {
+        if (Math.abs(loads[r]) > 1e-12)
           fail('Una coppia agisce su un nodo con sole cerniere.');
         continue;
       }
       equations.push([...row, loads[r]]);
-      rowLabels.push(nodes[Math.floor(r / 3)].id + ' · ' + ['ΣFx', 'ΣFy', 'ΣM'][r % 3]);
+      labels.push(rowLabels[r]);
     }
     const {rows, pivots} = reduce(equations, count);
     if (pivots.length < rows.length)
@@ -232,7 +271,7 @@ const Mechanics = (() => {
       elements,
       descriptors,
       equations,
-      rowLabels,
+      rowLabels: labels,
       free,
       primary,
       service,
@@ -245,7 +284,18 @@ const Mechanics = (() => {
       floating
     };
   }
-  return {solve, evaluate, supportAxes};
+  // World unit vector along which end 0 or 1 of a model member slides, for a member directed along (c, s).
+  function slideDirection(member, end, c, s) {
+    const mode = (end ? member.slideJ : member.slideI) || '';
+    if (member.type === 'bar' || !Object.hasOwn(slideModes, mode) || !mode)
+      return null;
+    if (mode !== 'incl')
+      return slideModes[mode](c, s);
+    const dx = end ? member.slideJdx : member.slideIdx, dy = end ? member.slideJdy : member.slideIdy;
+    const norm = Math.hypot(dx, dy);
+    return finite(norm) && norm > 1e-9 ? [dx / norm, dy / norm] : null;
+  }
+  return {solve, evaluate, supportAxes, slideDirection};
 })();
 if (typeof module !== 'undefined')
   module.exports = Mechanics;

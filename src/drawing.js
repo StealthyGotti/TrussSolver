@@ -56,6 +56,29 @@ const Draft = (() => {
     return `<g transform="translate(${x} ${y}) rotate(${axes.length === 1 && axes[0] === 0 ? -90 : 0})">${
         sym}</g>`;
   }
+  // Sliding connection between a member end and its node. (mx, my) points from the node
+  // into the member and (dx, dy) is the free sliding direction, both in screen axes.
+  function connection(px, py, mx, my, hinge, dx, dy) {
+    const paper = '#fafcf9', along = Math.abs(dx * mx + dy * my) > .92;
+    const nx = -my, ny = mx, at = (a, b) => [px + mx * a + nx * b, py + my * a + ny * b];
+    const seg = (p, q, stroke = green, w = 2.6) => line(...p, ...q, stroke, w, 'stroke-linecap="round"');
+    const wheel = p => circle(...p, 3.2, green, '#fff', 1.3), pin = p => circle(...p, 4.4, green, '#fff', 1.5);
+    if (hinge && along)
+      // Roller sliding along the member: its end runs on a guide parallel to the axis.
+      return seg(at(-3, 11.5), at(25, 11.5)) + wheel(at(5, 7)) + wheel(at(17, 7)) + pin(at(11, 0));
+    if (hinge) {
+      // Roller: a pin on the member end and two wheels on the sliding plane of the node.
+      const on = (a, k) => [px + mx * a + k * dx, py + my * a + k * dy];
+      return seg(at(0, 0), at(15, 0), paper, 6) + seg(on(0, -14), on(0, 14)) + wheel(on(5, -5.2)) +
+          wheel(on(5, 5.2)) + pin(at(13.5, 0));
+    }
+    if (along)
+      // Slider along the member: a U-shaped sleeve around its end.
+      return seg(at(0, -8.5), at(0, 8.5)) + seg(at(0, -8.5), at(13, -8.5)) + seg(at(0, 8.5), at(13, 8.5));
+    // Slider: two plates parallel to the sliding direction.
+    const plate = a => seg([px + mx * a - dx * 11, py + my * a - dy * 11], [px + mx * a + dx * 11, py + my * a + dy * 11], green, 2.8);
+    return seg(at(6, 0), at(12, 0), paper, 6) + plate(6) + plate(12);
+  }
   function pointLoad(x, y, fx, fy, caption, outgoing=false) {
     const norm = Math.hypot(fx, fy);
     if (!norm)
@@ -159,10 +182,13 @@ const Draft = (() => {
     const at = id => pos(nodes.get(id), view);
     // Loads are captioned as on the exam sheets: multiples of F, of W = Fb and of q = F/b.
     const caption = (value, symbol) => (Math.abs(value) === 1 ? '' : fmt(Math.abs(value))) + symbol;
+    // A node is drawn as one hinge when at most one of its member ends transmits a couple.
     const centralHinges = new Set(model.nodes.filter(n => {
-      if(n.m || n.support!=='free') return false;
-      const ends=model.members.filter(e=>e.a===n.id || e.b===n.id);
-      return ends.length===2 && ends.some(e=>e.type==='bar' || (e.a===n.id?e.hi:e.hj));
+      if(n.m || Mechanics.supportAxes[n.support].includes(2)) return false;
+      const ends=model.members.flatMap(e=>[[e,e.a,e.hi,e.slideI,e.springI],[e,e.b,e.hj,e.slideJ,e.springJ]]
+        .filter(end=>end[1]===n.id));
+      if (ends.length<2 || ends.some(end=>end[3] || end[4])) return false;
+      return ends.filter(([e,,hinge])=>!(hinge || e.type==='bar')).length<=1;
     }).map(n=>n.id));
     const rel = reduced ? result.free.map(i => result.descriptors[i]) : [];
     const realLoads = !state || state === result.primary || state === result.final;
@@ -241,10 +267,13 @@ const Draft = (() => {
       if (showLoads && realLoads && e.type==='bar' && e.eps)
         symbols += path('M -4 -4 h 8 v 8 h -8 Z',green,'none',1,
           `transform="translate(${(x+u)/2} ${(y+v)/2})"`);
-      if (editable) for (const [hinge, px, py, sign, kind] of [[e.hi, x, y, 1, 'mi'], [e.hj, u, v, -1, 'mj']]) {
-        if (!centralHinges.has(kind==='mi'?e.a:e.b) && (hinge || e.type === 'bar' || releases.some(d => d.kind === kind)))
+      if (editable) [[e.hi, x, y, 1, e.a], [e.hj, u, v, -1, e.b]].forEach(([hinge, px, py, sign, id], end) => {
+        const slide = Mechanics.slideDirection(e, end, c, -s);
+        if (slide)
+          symbols += connection(px, py, c * sign, s * sign, hinge, slide[0], -slide[1]);
+        else if (!centralHinges.has(id) && (hinge || e.type === 'bar'))
           symbols += circle(px + c * 8 * sign, py + s * 8 * sign, 3.8, green, '#fff', 1.4);
-      }
+      });
       if (editable) for (const [kSpring, px, py, sign, kind] of [[e.springI, x, y, 1, 'mi'], [e.springJ, u, v, -1, 'mj']]) {
         if (kSpring && !releases.some(d => d.kind === kind)) {
           const cx = px + c * 13 * sign, cy = py + s * 13 * sign;
