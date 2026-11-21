@@ -44,7 +44,7 @@ Il modello si scrive nelle unità delle tracce, senza valori numerici.
 
 Seleziona **Mano** e trascina la tavola con il mouse o con un dito. Le lenti regolano lo zoom, la rotellina ingrandisce attorno al puntatore e **Inquadra tutta la struttura** ripristina la vista d’insieme. Sotto e a sinistra della struttura compaiono le quote in multipli di b.
 
-- **Nodi e aste.** Con **Nodo** tocca la griglia, con **Asta** tocca in sequenza il primo e il secondo nodo. Un carico concentrato intermedio richiede un nodo nel punto di applicazione.
+- **Nodi e aste.** Con **Nodo** tocca la griglia, con **Asta** tocca in sequenza il primo e il secondo nodo. Un carico concentrato intermedio richiede un nodo nel punto di applicazione. I nodi prendono le lettere A, B, C nell’ordine in cui li crei: nelle proprietà del nodo puoi dare a ciascuno la lettera della traccia, così aste e incognite hanno gli stessi nomi della soluzione.
 - **Vincoli a terra.** Nelle proprietà del nodo scegli incastro, cerniera, carrello o doppio pendolo. Il doppio pendolo blocca la rotazione e una traslazione. In **Molle e cedimenti del vincolo** assegni la rigidezza di una molla e lo spostamento imposto lungo ogni componente vincolata.
 - **Collegamenti interni.** Nelle proprietà dell’asta scegli come ogni estremo si collega al nodo.
 

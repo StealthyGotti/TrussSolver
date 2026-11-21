@@ -264,3 +264,27 @@ test('Cedimento imposto al carrello di una mensola puntellata', () => {
   m.nodes[1].ux = 1;
   assert.throws(() => solve(m), /cedimento/);
 });
+
+test('Rinominare un nodo aggiorna aste, incognita e sezione senza cambiare i risultati', () => {
+  const {renameNode} = require('../src/examples');
+  const model = copy(exam), before = solve(model);
+  assert.equal(renameNode(model, 'A', 'P'), '');
+  assert.equal(renameNode(model, 'H', 'Q'), '');
+  assert.equal(model.release, 'P/E/mi');
+  assert.deepEqual([model.section.from, model.section.to, model.section.at], ['Q', 'F', 'Q']);
+  assert.ok(model.members.some(e => e.a === 'P' && e.b === 'B') && !model.members.some(e => [e.a, e.b].includes('A')));
+  const after = solve(model);
+  assert.equal(after.descriptors[after.free[0]].label, 'W_PE');
+  near(after.X[0], before.X[0]);
+  // A reaction chosen as unknown follows the node too.
+  const beam2 = loadedBeam('fixed');
+  beam2.release = 'r/B/1';
+  assert.equal(renameNode(beam2, 'B', 'Z'), '');
+  assert.equal(beam2.release, 'r/Z/1');
+  near(solve(beam2).X[0], 3 * 12 * 6 / 8);
+  // Names already in use or not valid are refused and leave the model as it was.
+  assert.match(renameNode(model, 'P', 'B'), /Esiste già/);
+  assert.match(renameNode(model, 'P', 'due parole'), /senza spazi/);
+  assert.equal(renameNode(model, 'P', 'P'), '');
+  assert.ok(model.nodes.some(n => n.id === 'P'));
+});

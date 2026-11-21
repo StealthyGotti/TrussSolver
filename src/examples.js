@@ -19,6 +19,30 @@ const Models = (() => {
     kappa: 0,
     ...data
   });
+  // Gives a node the letter it has on the exam sheet. Members, the chosen unknown and the section
+  // follow the new name. Returns a message when the name cannot be used.
+  function renameNode(model, from, to) {
+    if (!/^[A-Za-z0-9_-]{1,14}$/.test(to))
+      return 'Il nome usa da 1 a 14 lettere o cifre, senza spazi.';
+    if (to === from)
+      return '';
+    if (model.nodes.some(n => n.id === to))
+      return 'Esiste già un nodo con questo nome.';
+    const node = model.nodes.find(n => n.id === from);
+    if (!node)
+      return 'Nodo non trovato.';
+    const swap = id => id === from ? to : id;
+    node.id = to;
+    for (const e of model.members)
+      Object.assign(e, {a: swap(e.a), b: swap(e.b)});
+    // Unknowns are named r/node/component for reactions and a/b/kind for member actions.
+    const parts = (model.release || '').split('/');
+    if (parts.length === 3)
+      model.release = (parts[0] === 'r' ? ['r', swap(parts[1]), parts[2]] : [swap(parts[0]), swap(parts[1]), parts[2]]).join('/');
+    if (model.section)
+      Object.assign(model.section, {from: swap(model.section.from), to: swap(model.section.to), at: swap(model.section.at)});
+    return '';
+  }
   const firstExam = {
     title: 'Tema 1 · Telaio con biella AB',
     ref: {b: 480, F: 1500},
@@ -113,7 +137,7 @@ const Models = (() => {
       beam('G', 'H', {kappa: 4}), beam('H', 'F'), beam('F', 'I')
     ]
   };
-  return {node, beam, examples: [firstExam, inclinedRoller, springSupport, internalSliders, settlement]};
+  return {node, beam, renameNode, examples: [firstExam, inclinedRoller, springSupport, internalSliders, settlement]};
 })();
 if (typeof module !== 'undefined')
   module.exports = Models;

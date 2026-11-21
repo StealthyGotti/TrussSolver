@@ -210,7 +210,8 @@
     let html = '<label class="cap" for="object">Selezione</label><select class="object" id="object">' +
         options(choices, selection) + '</select>';
     if (isNode) {
-      html += '<span class="cap">Geometria</span><div class="props">' + field('x', 'x [b]', o.x) +
+      html += '<span class="cap">Nome</span><label class="full-field">Lettera del nodo sulla traccia<input id="node-name" maxlength="14" autocomplete="off" value="' +
+          esc(o.id) + '"></label><span class="cap">Geometria</span><div class="props">' + field('x', 'x [b]', o.x) +
           field('y', 'y [b]', o.y) + '</div><span class="cap">Vincolo esterno</span>' +
           select('support', 'Tipo di appoggio', Object.entries(supports), o.support) + supportDetails(o) +
           '<span class="cap">Carichi nodali</span><div class="props">' + field('fx', 'H [F]', o.fx) +
@@ -325,6 +326,28 @@
       }, key === 'x' || key === 'y');
     });
     sectionHandlers();
+    if ($('#node-name'))
+      $('#node-name').onchange = e => {
+        const input = e.target, name = input.value.trim(), trial = clone(model);
+        const problem = Models.renameNode(trial, o.id, name);
+        if (problem) {
+          input.setCustomValidity(problem);
+          input.reportValidity();
+          input.oninput = () => input.setCustomValidity('');
+          return;
+        }
+        if (name === o.id) return;
+        // Same structure with other letters: results are recomputed so that they carry the new names.
+        const solved = Boolean(result);
+        remember();
+        model = trial;
+        first = '';
+        if (solved) calculate();
+        else {
+          resetResult();
+          render();
+        }
+      };
     if ($('#rename'))
       $('#rename').onchange = e => {
         const title = e.target.value.trim() || 'Struttura senza nome';
