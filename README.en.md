@@ -4,7 +4,11 @@
 
 Draw a plane structure like the one on your exam sheet, press **Solve** and get the full worked solution by the force method: the N, T and M diagrams, the value of the redundant unknown and every step of the virtual work calculation.
 
-It is made for engineering students who want to check their own work step by step. It is free, runs in the browser and needs no installation.
+It also solves the cross-section: enter the profile drawn on the sheet and it computes area, centroid, moments of inertia and the stresses σ, τ and von Mises at the required point.
+
+It is made for engineering students who want to check their own work step by step. It runs in the browser and needs no installation.
+
+**It is free for everyone.** If it helped you and you feel like it, you can [buy me a coffee ☕](https://www.paypal.com/paypalme/mattiagottiii).
 
 | The scheme you draw | The diagrams you get |
 | --- | --- |
@@ -105,10 +109,6 @@ The [tutorial index](tutorial/README.en.md) explains how to read schemes and sig
 Elastic plane frames with straight members, solved by the force method and the principle of virtual work. Bending, thermal effects, springs and settlements are included. Axial deformability is optional and is off in the exams.
 
 Varying distributed loads, inclined supports and non-symmetric cross-sections are not covered.
-
-## Free for everyone
-
-TrussSolver is free, and anyone can use it and share it. If it helped you and you feel like it, you can [buy me a coffee ☕](https://www.paypal.com/paypalme/mattiagottiii).
 
 ## For those who want to look at the code
 

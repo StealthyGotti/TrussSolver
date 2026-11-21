@@ -4,7 +4,11 @@
 
 Disegni una struttura piana come quella della traccia d’esame, premi **Calcola** e ottieni lo svolgimento completo con il metodo delle forze: i diagrammi N, T e M, il valore dell’incognita iperstatica e tutti i passaggi dei lavori virtuali.
 
-È pensato per studenti di ingegneria che vogliono controllare i propri conti passo per passo. È gratuito, funziona nel browser e non richiede installazioni.
+Risolve anche la sezione: inserisci il profilo disegnato sulla traccia e calcola area, baricentro, momenti d’inerzia e le tensioni σ, τ e von Mises nel punto richiesto.
+
+È pensato per studenti di ingegneria che vogliono controllare i propri conti passo per passo. Funziona nel browser e non richiede installazioni.
+
+**È gratis per tutti.** Se ti è stato utile e ti va, puoi [offrirmi un caffè ☕](https://www.paypal.com/paypalme/mattiagottiii).
 
 | Lo schema che disegni | I diagrammi che ottieni |
 | --- | --- |
@@ -105,10 +109,6 @@ L’[indice dei tutorial](tutorial/README.md) spiega come leggere schemi e segni
 Telai piani elastici con aste rettilinee, risolti con il metodo delle forze e il principio dei lavori virtuali. Contano la flessione, gli effetti termici, le molle e i cedimenti. La deformabilità assiale è facoltativa e nei temi è spenta.
 
 Non sono previsti carichi distribuiti variabili, vincoli a terra inclinati e sezioni non simmetriche.
-
-## Gratis per tutti
-
-TrussSolver è gratuito e chiunque può usarlo e condividerlo. Se ti è stato utile e ti va, puoi [offrirmi un caffè ☕](https://www.paypal.com/paypalme/mattiagottiii).
 
 ## Per chi vuole guardare il codice
 
