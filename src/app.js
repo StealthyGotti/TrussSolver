@@ -1,5 +1,5 @@
 (() => {
-  const $ = s => document.querySelector(s), {esc} = Draft;
+  const $ = s => document.querySelector(s), {esc} = Draft, tr = I18n.t;
   const paths = {
     folder: 'M3 7h6l2 2h10l-2 10H3z M3 7V5h6l2 2h8v2',
     save: 'M4 3h13l3 3v15H4z M8 3v6h8V3 M8 21v-8h8v8',
@@ -106,7 +106,7 @@
         .join('');
   }
   function field(key, title, value) {
-    const shown = ui.decimals ? String(value).replace('.', ',') : NumericDisplay.inputFraction(value);
+    const shown = ui.decimals ? NumericDisplay.plain(value) : NumericDisplay.inputFraction(value);
     return `<label>${title}<input type="text" data-numeric data-prop="${key}" value="${esc(shown)}" required></label>`;
   }
   function check(key, title, value) {
@@ -118,17 +118,17 @@
         options(items, value)}</select></label>`;
   }
   function releaseList() {
-    const items = [['', 'Automatica']];
+    const items = [['', tr('Automatica')]];
     for (const n of model.nodes)
       Mechanics.supportAxes[n.support].forEach(
-          d => items.push(['r/' + n.id + '/' + d, ['H', 'V', 'W'][d] + '_' + n.id + ' · reazione in ' + n.id]));
+          d => items.push(['r/' + n.id + '/' + d, ['H', 'V', 'W'][d] + '_' + n.id + tr(' · reazione in {0}', n.id)]));
     for (const e of model.members) {
       const id = e.a + '/' + e.b + '/', tag = e.a + '–' + e.b;
-      items.push([id + 'n', 'N_' + e.a + e.b + ' · sforzo normale di ' + tag]);
+      items.push([id + 'n', 'N_' + e.a + e.b + tr(' · sforzo normale di {0}', tag)]);
       if (e.type === 'beam' && !e.hi)
-        items.push([id + 'mi', 'W_' + e.a + e.b + ' · coppia in ' + e.a + ' su ' + tag]);
+        items.push([id + 'mi', 'W_' + e.a + e.b + tr(' · coppia in {0} su {1}', e.a, tag)]);
       if (e.type === 'beam' && !e.hj)
-        items.push([id + 'mj', 'W_' + e.b + e.a + ' · coppia in ' + e.b + ' su ' + tag]);
+        items.push([id + 'mj', 'W_' + e.b + e.a + tr(' · coppia in {0} su {1}', e.b, tag)]);
     }
     return items;
   }
@@ -137,30 +137,31 @@
     const axes = Mechanics.supportAxes[n.support];
     if (!axes.length)
       return '';
-    const springs = [['kx', 'k orizzontale [EJ/b³]'], ['ky', 'k verticale [EJ/b³]'], ['kr', 'k rotazionale [EJ/b]']];
-    const moves = [['ux', 'u orizzontale [Fb³/EJ]'], ['uy', 'v verticale [Fb³/EJ]'], ['ur', 'φ rotazione ↺ [Fb²/EJ]']];
+    const springs = [['kx', tr('k orizzontale [EJ/b³]')], ['ky', tr('k verticale [EJ/b³]')], ['kr', tr('k rotazionale [EJ/b]')]];
+    const moves = [['ux', tr('u orizzontale [Fb³/EJ]')], ['uy', tr('v verticale [Fb³/EJ]')], ['ur', tr('φ rotazione ↺ [Fb²/EJ]')]];
     return '<details' + (axes.some(d => n[springs[d][0]] || n[moves[d][0]]) ? ' open' : '') +
-        '><summary>Molle e cedimenti del vincolo</summary><p class="help">Rigidezza della molla interposta fra nodo e terreno. Il valore 0 indica un vincolo rigido.</p><div class="props">' +
+        '><summary>' + tr('Molle e cedimenti del vincolo') + '</summary><p class="help">' +
+        tr('Rigidezza della molla interposta fra nodo e terreno. Il valore 0 indica un vincolo rigido.') + '</p><div class="props">' +
         axes.map(d => field(springs[d][0], springs[d][1], n[springs[d][0]] || 0)).join('') +
-        '</div><p class="help">Spostamento imposto al vincolo, positivo verso destra, verso l’alto o in senso antiorario.</p><div class="props">' +
+        '</div><p class="help">' + tr('Spostamento imposto al vincolo, positivo verso destra, verso l’alto o in senso antiorario.') +
+        '</p><div class="props">' +
         axes.map(d => field(moves[d][0], moves[d][1], n[moves[d][0]] || 0)).join('') + '</div></details>';
   }
   // Section check of the exam sheets: reference values, beam, node, width profile and point *.
   function sectionDetails() {
     const s = model.section, ref = model.ref || {b: 1000, F: 1000};
     const beams = model.members.filter(e => e.type === 'beam');
-    const directions = [['', 'Nessuna verifica'], ...beams.flatMap(e => [[e.a + '/' + e.b, e.a + ' → ' + e.b], [e.b + '/' + e.a, e.b + ' → ' + e.a]])];
-    const text = s ? s.profile.map(p => p.map(v => String(v).replace('.', ',')).join('  ')).join('\n') : '';
-    const plain = value => String(value).replace('.', ',');
-    return `<details class="model-opts"${s ? ' open' : ''}><summary>Sezione e tensioni</summary><div class="props">
+    const directions = [['', tr('Nessuna verifica')], ...beams.flatMap(e => [[e.a + '/' + e.b, e.a + ' → ' + e.b], [e.b + '/' + e.a, e.b + ' → ' + e.a]])];
+    const plain = NumericDisplay.plain, text = s ? s.profile.map(p => p.map(plain).join('  ')).join('\n') : '';
+    return `<details class="model-opts"${s ? ' open' : ''}><summary>${tr('Sezione e tensioni')}</summary><div class="props">
       <label>b [mm]<input id="ref-b" value="${esc(plain(ref.b))}"></label><label>F [N]<input id="ref-F" value="${esc(plain(ref.F))}"></label>
-      <label class="span2">Trave, con il lembo inferiore a destra andando da<select id="section-member">${
+      <label class="span2">${tr('Trave, con il lembo inferiore a destra andando da')}<select id="section-member">${
         options(directions, s ? s.from + '/' + s.to : '')}</select></label>${s ? `
-      <label>Sezione nel nodo<select id="section-at">${options([[s.from, s.from], [s.to, s.to]], s.at)}</select></label>
-      <label>Quota del punto * [mm]<input id="section-cut" value="${esc(plain(s.cut))}"></label>
-      <label class="span2">Profilo dal lembo inferiore: quota y e larghezza [mm], un punto per riga<textarea id="section-profile" rows="7" spellcheck="false">${
+      <label>${tr('Sezione nel nodo')}<select id="section-at">${options([[s.from, s.from], [s.to, s.to]], s.at)}</select></label>
+      <label>${tr('Quota del punto * [mm]')}<input id="section-cut" value="${esc(plain(s.cut))}"></label>
+      <label class="span2">${tr('Profilo dal lembo inferiore: quota y e larghezza [mm], un punto per riga')}<textarea id="section-profile" rows="7" spellcheck="false">${
         esc(text)}</textarea></label>` : ''}</div>${
-      s ? '<p class="help">La sezione è simmetrica rispetto all’asse verticale. Ripeti la stessa quota per un gradino. Due larghezze diverse a quote diverse danno un tratto inclinato.</p>' : ''}</details>`;
+      s ? '<p class="help">' + tr('La sezione è simmetrica rispetto all’asse verticale. Ripeti la stessa quota per un gradino. Due larghezze diverse a quote diverse danno un tratto inclinato.') + '</p>' : ''}</details>`;
   }
   function sectionHandlers() {
     const invalid = (input, message) => {
@@ -172,7 +173,7 @@
       const input = $('#ref-' + key);
       if (input) input.onchange = () => {
         const value = NumericDisplay.parse(input.value);
-        if (!(value > 0)) return invalid(input, 'Inserisci un valore positivo.');
+        if (!(value > 0)) return invalid(input, tr('Inserisci un valore positivo.'));
         change(() => { model.ref = {...(model.ref || {b: 1000, F: 1000}), [key]: value}; });
       };
     }
@@ -190,53 +191,55 @@
     if ($('#section-at')) $('#section-at').onchange = e => change(() => { model.section.at = e.target.value; });
     if ($('#section-cut')) $('#section-cut').onchange = e => {
       const value = NumericDisplay.parse(e.target.value);
-      if (!Number.isFinite(value)) return invalid(e.target, 'Inserisci la quota del punto in mm.');
+      if (!Number.isFinite(value)) return invalid(e.target, tr('Inserisci la quota del punto in mm.'));
       change(() => { model.section.cut = value; });
     };
     if ($('#section-profile')) $('#section-profile').onchange = e => {
       const profile = e.target.value.split('\n').map(row => row.trim()).filter(Boolean)
           .map(row => row.split(/[\s;]+/).map(NumericDisplay.parse));
       if (!CrossSection.valid(profile))
-        return invalid(e.target, 'Ogni riga contiene quota e larghezza, con quote crescenti dal lembo inferiore.');
+        return invalid(e.target, tr('Ogni riga contiene quota e larghezza, con quote crescenti dal lembo inferiore.'));
       change(() => { model.section.profile = profile; });
     };
   }
   function inspector() {
     const o = obj(), isNode = selection[0] === 'n', isEdge = selection[0] === 'e';
     const choices = [
-      ['', 'Modello completo'], ...model.nodes.map((n, i) => ['n' + i, 'Nodo ' + n.id]),
-      ...model.members.map((e, i) => ['e' + i, 'Asta ' + e.a + '–' + e.b])
+      ['', tr('Modello completo')], ...model.nodes.map((n, i) => ['n' + i, tr('Nodo {0}', n.id)]),
+      ...model.members.map((e, i) => ['e' + i, tr('Asta {0}', e.a + '–' + e.b)])
     ];
-    let html = '<label class="cap" for="object">Selezione</label><select class="object" id="object">' +
+    let html = '<label class="cap" for="object">' + tr('Selezione') + '</label><select class="object" id="object">' +
         options(choices, selection) + '</select>';
     if (isNode) {
-      html += '<span class="cap">Nome</span><label class="full-field">Lettera del nodo sulla traccia<input id="node-name" maxlength="14" autocomplete="off" value="' +
-          esc(o.id) + '"></label><span class="cap">Geometria</span><div class="props">' + field('x', 'x [b]', o.x) +
-          field('y', 'y [b]', o.y) + '</div><span class="cap">Vincolo esterno</span>' +
-          select('support', 'Tipo di appoggio', Object.entries(supports), o.support) + supportDetails(o) +
-          '<span class="cap">Carichi nodali</span><div class="props">' + field('fx', 'H [F]', o.fx) +
-          field('fy', 'V [F]', o.fy) + field('m', 'Coppia W ↺ [Fb]', o.m) + '</div>';
+      html += '<span class="cap">' + tr('Nome') + '</span><label class="full-field">' + tr('Lettera del nodo sulla traccia') +
+          '<input id="node-name" maxlength="14" autocomplete="off" value="' +
+          esc(o.id) + '"></label><span class="cap">' + tr('Geometria') + '</span><div class="props">' + field('x', 'x [b]', o.x) +
+          field('y', 'y [b]', o.y) + '</div><span class="cap">' + tr('Vincolo esterno') + '</span>' +
+          select('support', tr('Tipo di appoggio'), Object.entries(supports).map(([k, v]) => [k, tr(v)]), o.support) + supportDetails(o) +
+          '<span class="cap">' + tr('Carichi nodali') + '</span><div class="props">' + field('fx', 'H [F]', o.fx) +
+          field('fy', 'V [F]', o.fy) + field('m', tr('Coppia W ↺ [Fb]'), o.m) + '</div>';
     } else if (isEdge) {
-      html += '<span class="cap">Elemento</span>' +
-          select('type', 'Tipo', [['beam', 'Trave'], ['bar', 'Biella']], o.type);
-      html += '<span class="cap">Tratteggio</span>' +
-          select('fiberSide', 'Fibre tese per M positivo · ' + esc(o.a) + ' → ' + esc(o.b),
-                 [['right','A destra'], ['left','A sinistra']], o.fiberSide);
+      html += '<span class="cap">' + tr('Elemento') + '</span>' +
+          select('type', tr('Tipo'), [['beam', tr('Trave')], ['bar', tr('Biella')]], o.type);
+      html += '<span class="cap">' + tr('Tratteggio') + '</span>' +
+          select('fiberSide', tr('Fibre tese per M positivo · {0}', esc(o.a) + ' → ' + esc(o.b)),
+                 [['right', tr('A destra')], ['left', tr('A sinistra')]], o.fiberSide);
       if (o.type === 'beam') {
-        html += '<span class="cap">Collegamenti ai nodi</span>';
+        html += '<span class="cap">' + tr('Collegamenti ai nodi') + '</span>';
         for (const [end, id] of [['I', o.a], ['J', o.b]]) {
-          html += select('conn' + end, 'In ' + esc(id), Object.entries(connections).map(([k, v]) => [k, v[2]]),
+          html += select('conn' + end, tr('In {0}', esc(id)), Object.entries(connections).map(([k, v]) => [k, tr(v[2])]),
                          connectionOf(o, end));
           if (o['slide' + end] === 'incl')
-            html += '<div class="props">' + field('slide' + end + 'dx', 'Piano in ' + esc(id) + ' · Δx', o['slide' + end + 'dx']) +
+            html += '<div class="props">' + field('slide' + end + 'dx', tr('Piano in {0} · Δx', esc(id)), o['slide' + end + 'dx']) +
                 field('slide' + end + 'dy', 'Δy', o['slide' + end + 'dy']) + '</div>';
         }
-        html += '<span class="cap">Carico uniforme · assi globali</span><div class="props">' +
-            field('qx', 'p lungo x [F/b]', o.qx) + field('qy', 'q lungo y [F/b]', o.qy) + '</div>';
+        html += '<span class="cap">' + tr('Carico uniforme · assi globali') + '</span><div class="props">' +
+            field('qx', tr('p lungo x [F/b]'), o.qx) + field('qy', tr('q lungo y [F/b]'), o.qy) + '</div>';
       }
       if (o.type === 'beam') {
         html += '<details' + (endLoadKeys.some(k => o[k]) ? ' open' : '') +
-            '><summary>Carichi su un solo lato del nodo</summary><p class="help">Forze e coppie applicate all’estremo dell’asta, dalla parte dell’asta rispetto a cerniere, pattini e carrelli.</p>';
+            '><summary>' + tr('Carichi su un solo lato del nodo') + '</summary><p class="help">' +
+            tr('Forze e coppie applicate all’estremo dell’asta, dalla parte dell’asta rispetto a cerniere, pattini e carrelli.') + '</p>';
         for (const [end, from, to] of [['I', o.a, o.b], ['J', o.b, o.a]]) {
           const tag = '<sub>' + esc(from) + esc(to) + '</sub>';
           html += '<div class="props">' + field('fx' + end, 'H' + tag + ' [F]', o['fx' + end] || 0) +
@@ -247,29 +250,30 @@
       }
       if (o.type === 'beam' && !(o.hi && o.hj))
         html +=
-            '<details><summary>Molle rotazionali agli estremi</summary><p class="help">Rigidezza tra asta e nodo in EJ/b. Il valore 0 mantiene il collegamento rigido.</p><div class="props">' +
-            (o.hi ? '' : field('springI', 'k in ' + esc(o.a), o.springI || 0)) +
-            (o.hj ? '' : field('springJ', 'k in ' + esc(o.b), o.springJ || 0)) +
+            '<details><summary>' + tr('Molle rotazionali agli estremi') + '</summary><p class="help">' +
+            tr('Rigidezza tra asta e nodo in EJ/b. Il valore 0 mantiene il collegamento rigido.') + '</p><div class="props">' +
+            (o.hi ? '' : field('springI', tr('k in {0}', esc(o.a)), o.springI || 0)) +
+            (o.hj ? '' : field('springJ', tr('k in {0}', esc(o.b)), o.springJ || 0)) +
             '</div></details>';
-      html += '<span class="cap">Rigidezza</span><div class="props">' +
-          (o.type === 'beam' ? field('ei', 'Rigidezza [EJ]', o.ei) : '') +
+      html += '<span class="cap">' + tr('Rigidezza') + '</span><div class="props">' +
+          (o.type === 'beam' ? field('ei', tr('Rigidezza [EJ]'), o.ei) : '') +
           field('ea', 'EA [EJ/b²]', o.ea) +
-          '</div><details><summary>Deformazioni impresse</summary><div class="props">' +
+          '</div><details' + (o.eps || o.kappa ? ' open' : '') + '><summary>' + tr('Deformazioni impresse') + '</summary><div class="props">' +
           field('eps', 'ε [Fb²/EJ]', o.eps) + (o.type === 'beam' ? field('kappa', 'θ [Fb/EJ]', o.kappa) : '') +
           '</div></details>';
     } else {
       const restraint = model.nodes.filter(n => n.support !== 'free').length;
       html +=
-          `<div class="setting"><span>Schema</span><strong>Telaio piano</strong></div><div class="setting"><span>Vincoli esterni</span><strong>${
-              restraint}</strong></div><div class="setting"><span>Unità</span><strong>F · b · EJ</strong></div><span class="cap">Metodo delle forze</span>` +
-          select('release', 'Incognita da rilasciare', releaseList(), model.release) +
-          check('axial', 'Includi la deformabilità assiale', model.axial) + sectionDetails() +
-          `<details class="model-opts"><summary>Impostazioni del disegno</summary><div class="props"><label class="span2">Nome del modello<input id="rename" maxlength="70" value="${
-              esc(model.title)}"></label><label>Passo griglia [b]<select id="grid">${
+          `<div class="setting"><span>${tr('Schema')}</span><strong>${tr('Telaio piano')}</strong></div><div class="setting"><span>${tr('Vincoli esterni')}</span><strong>${
+              restraint}</strong></div><div class="setting"><span>${tr('Unità')}</span><strong>F · b · EJ</strong></div><span class="cap">${tr('Metodo delle forze')}</span>` +
+          select('release', tr('Incognita da rilasciare'), releaseList(), model.release) +
+          check('axial', tr('Includi la deformabilità assiale'), model.axial) + sectionDetails() +
+          `<details class="model-opts"><summary>${tr('Impostazioni del disegno')}</summary><div class="props"><label class="span2">${tr('Nome del modello')}<input id="rename" maxlength="70" value="${
+              esc(tr(model.title))}"></label><label>${tr('Passo griglia [b]')}<select id="grid">${
               options([.1, .25, .5, 1, 2].map(n => [n, fmt(n)]), step)}</select></label></div></details>`;
     }
     if (selection)
-      html += '<button class="delete" id="remove">Elimina ' + (isNode ? 'nodo' : 'asta') + '</button>';
+      html += '<button class="delete" id="remove">' + (isNode ? tr('Elimina nodo') : tr('Elimina asta')) + '</button>';
     $('#inspector').innerHTML = html;
     $('#object').onchange = e => {
       selection = e.target.value;
@@ -281,7 +285,7 @@
       const value = numeric ? NumericDisplay.parse(input.value) : input.type === 'checkbox' ? input.checked : input.value;
       if (numeric && (!Number.isFinite(value) || (['ei', 'ea'].includes(key) && value <= 0) ||
           (['springI', 'springJ', 'kx', 'ky', 'kr'].includes(key) && value < 0))) {
-        input.setCustomValidity('Inserisci un decimale o una frazione valida. EA ed EJ devono essere positivi e le molle hanno rigidezza positiva o nulla.');
+        input.setCustomValidity(tr('Inserisci un decimale o una frazione valida. EA ed EJ devono essere positivi e le molle hanno rigidezza positiva o nulla.'));
         input.reportValidity();
         input.oninput = () => input.setCustomValidity('');
         return;
@@ -332,7 +336,7 @@
         const input = e.target, name = input.value.trim(), trial = clone(model);
         const problem = Models.renameNode(trial, o.id, name);
         if (problem) {
-          input.setCustomValidity(problem);
+          input.setCustomValidity(tr(problem));
           input.reportValidity();
           input.oninput = () => input.setCustomValidity('');
           return;
@@ -351,7 +355,7 @@
       };
     if ($('#rename'))
       $('#rename').onchange = e => {
-        const title = e.target.value.trim() || 'Struttura senza nome';
+        const title = e.target.value.trim() || tr('Struttura senza nome');
         change(() => {
           model.title = title;
         });
@@ -399,10 +403,10 @@
     $('#tools').innerHTML =
         Object.entries(names)
             .map(
-                ([k, t]) => `<button data-tool="${k}" class="${k === tool ? 'active' : ''}" aria-pressed="${
-                    k === tool}">${icon(k)} ${t}</button>`)
+                ([k, title]) => `<button data-tool="${k}" class="${k === tool ? 'active' : ''}" aria-pressed="${
+                    k === tool}">${icon(k)} ${tr(title)}</button>`)
             .join('') +
-        `<button id="undo" aria-label="Annulla modifica" title="Annulla modifica" ${
+        `<button id="undo" aria-label="${tr('Annulla modifica')}" title="${tr('Annulla modifica')}" ${
             history.length ? '' : 'disabled'}>${icon('undo')}</button>`;
     document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => {
       tool = b.dataset.tool;
@@ -417,14 +421,14 @@
       fitNeeded = true;
       render();
     };
-    $('#hint').textContent = first && tool === 'edge' ? 'Primo nodo ' + first + ' · scegli il secondo estremo.' : tips[tool];
-    $('#counts').textContent = model.nodes.length + ' nodi · ' + model.members.length + ' aste';
+    $('#hint').textContent = first && tool === 'edge' ? tr('Primo nodo {0} · scegli il secondo estremo.', first) : tr(tips[tool]);
+    $('#counts').textContent = tr('{0} nodi · {1} aste', model.nodes.length, model.members.length);
   }
   function analysis() {
     $('#status').innerHTML = result ?
         `<span class="tag">${
-            result.free.length ? 'Iperstatica · grado ' + result.free.length : 'Isostatica'}</span>` :
-        `<span class="tag pending">${problem ? 'Verifica modello' : 'Da calcolare'}</span>`;
+            result.free.length ? tr('Iperstatica · grado {0}', result.free.length) : tr('Isostatica')}</span>` :
+        `<span class="tag pending">${problem ? tr('Verifica modello') : tr('Da calcolare')}</span>`;
     if (result)
       Report.render($('#analysis'), model, result, ui, newUI => {
         Object.assign(ui, newUI);
@@ -432,13 +436,13 @@
       });
     else
       $('#analysis').innerHTML = '<div class="note ' + (problem ? 'error-box' : '') + '">' +
-          esc(problem || 'Premi Calcola per ottenere i diagrammi e lo svolgimento del modello corrente.') +
+          esc(problem ? tr(problem) : tr('Premi Calcola per ottenere i diagrammi e lo svolgimento del modello corrente.')) +
           '</div>';
   }
   function render() {
     // Irrational member lengths, such as √5 b, tell which roots may appear in the results.
     NumericDisplay.learn(model);
-    $('#model-name').textContent = model.title;
+    $('#model-name').textContent = tr(model.title);
     board();
     inspector();
     analysis();
@@ -500,7 +504,7 @@
       return;
     }
     if (model.members.some(m => [m.a, m.b].includes(id) && [m.a, m.b].includes(first))) {
-      $('#hint').textContent = 'Questi nodi sono già collegati. Scegli un altro estremo.';
+      $('#hint').textContent = tr('Questi nodi sono già collegati. Scegli un altro estremo.');
       return;
     }
     change(() => {
@@ -527,15 +531,38 @@
     calculate();
     $('#status').scrollIntoView({block: 'nearest', behavior: 'smooth'});
   };
-  $('#example').innerHTML = '<option value="">Modelli</option>' +
-      options(Models.examples.map((m, i) => [i, m.title]), '') +
-      '<option value="new">＋ Nuovo disegno</option>';
+  // Texts of the page that are not rebuilt at every render: static labels and the model menu.
+  function staticTexts() {
+    document.documentElement.lang = I18n.lang;
+    document.title = tr('TrussSolver · Banco di calcolo');
+    document.querySelectorAll('[data-t]').forEach(el => {
+      el.textContent = tr(el.dataset.t);
+    });
+    for (const attribute of ['title', 'aria-label'])
+      document.querySelectorAll('[data-t-' + attribute + ']').forEach(el => {
+        el.setAttribute(attribute, tr(el.getAttribute('data-t-' + attribute)));
+      });
+    $('#example').innerHTML = '<option value="">' + tr('Modelli') + '</option>' +
+        options(Models.examples.map((m, i) => [i, tr(m.title)]), '') +
+        '<option value="new">' + tr('＋ Nuovo disegno') + '</option>';
+    $('#language').value = I18n.lang;
+  }
+  $('#language').onchange = e => {
+    I18n.use(e.target.value);
+    NumericDisplay.setLocale(I18n.locale);
+    staticTexts();
+    const open = Array.from(document.querySelectorAll('details'), d => d.open);
+    render();
+    document.querySelectorAll('details').forEach((d, i) => { d.open = open[i]; });
+  };
+  NumericDisplay.setLocale(I18n.locale);
+  staticTexts();
   $('#example').onchange = e => {
     const v = e.target.value;
     if (v === '')
       return;
     load(
-        v === 'new' ? {title: 'Nuova struttura', ref: {b: 1000, F: 1000}, nodes: [], members: [], release: '', axial: false} :
+        v === 'new' ? {title: tr('Nuova struttura'), ref: {b: 1000, F: 1000}, nodes: [], members: [], release: '', axial: false} :
                       Models.examples[+v]);
     if (v === 'new') {
       resetResult();
@@ -602,7 +629,7 @@
       load(m);
     } catch {
       $('#hint').textContent =
-          'Impossibile aprire il file. Seleziona un modello JSON salvato da TrussSolver.';
+          tr('Impossibile aprire il file. Seleziona un modello JSON salvato da TrussSolver.');
     }
     e.target.value = '';
   };

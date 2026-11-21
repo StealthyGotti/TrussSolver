@@ -1,7 +1,15 @@
 // Display and input only. The solver and the JSON model always use numbers.
 const NumericDisplay = (() => {
-  const decimals = new Intl.NumberFormat('it-IT', {maximumSignificantDigits: 9, useGrouping: false});
+  // Italian writes decimals with a comma, English with a point.
+  let locale = 'it-IT', decimals = new Intl.NumberFormat(locale, {maximumSignificantDigits: 9, useGrouping: false});
+  function setLocale(tag) {
+    locale = tag;
+    decimals = new Intl.NumberFormat(locale, {maximumSignificantDigits: 9, useGrouping: false});
+    cache.clear();
+  }
   const decimal = value => decimals.format(value === 0 ? 0 : value);
+  // A stored number as typed in a field, with the decimal mark of the language.
+  const plain = value => locale.startsWith('it') ? String(value).replace('.', ',') : String(value);
 
   function decimalFraction(value) {
     const [digits, power = '0'] = String(value).toLowerCase().split('e');
@@ -116,5 +124,8 @@ const NumericDisplay = (() => {
     return result;
   }
 
-  return {decimal, fraction: value => fraction(value), inputFraction: value => fraction(value, true), parse, learn};
+  return {
+    decimal, plain, setLocale, fraction: value => fraction(value), inputFraction: value => fraction(value, true), parse, learn,
+    get locale() { return locale; }
+  };
 })();

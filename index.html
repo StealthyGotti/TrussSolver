@@ -6,24 +6,24 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header><div class="brand"><svg viewBox="0 0 42 36" width="38" height="34" aria-hidden="true"><path d="M4 29 18 5l19 24H4l20-10" fill="none" stroke="#00806f" stroke-width="3"/><g fill="#00806f"><circle cx="4" cy="29" r="3.3"/><circle cx="18" cy="5" r="3.3"/><circle cx="37" cy="29" r="3.3"/></g></svg>Truss<span>Solver</span></div><i class="divider"></i><span class="head-sub">Analisi strutturale 2D</span><div class="head-actions"><button id="open"><i data-icon="folder"></i> Apri</button><button id="save"><i data-icon="save"></i> Salva</button></div><input hidden type="file" id="file" accept=".json,application/json"></header>
+<header><div class="brand"><svg viewBox="0 0 42 36" width="38" height="34" aria-hidden="true"><path d="M4 29 18 5l19 24H4l20-10" fill="none" stroke="#00806f" stroke-width="3"/><g fill="#00806f"><circle cx="4" cy="29" r="3.3"/><circle cx="18" cy="5" r="3.3"/><circle cx="37" cy="29" r="3.3"/></g></svg>Truss<span>Solver</span></div><i class="divider"></i><span class="head-sub" data-t="Analisi strutturale 2D">Analisi strutturale 2D</span><div class="head-actions"><select id="language" class="language" aria-label="Lingua · Language"><option value="it">Italiano</option><option value="en">English</option></select><button id="open"><i data-icon="folder"></i> <span data-t="Apri">Apri</span></button><button id="save"><i data-icon="save"></i> <span data-t="Salva">Salva</span></button></div><input hidden type="file" id="file" accept=".json,application/json"></header>
 <main>
-<section class="project"><div><div class="overline"><b></b> MODELLO ATTIVO</div><h1 id="model-name"></h1></div><div class="project-actions"><label class="check"><input id="show-decimals" type="checkbox" autocomplete="off"> Mostra decimali</label><label class="picker"><i data-icon="layers"></i><select id="example" aria-label="Riapri il primo tema o crea un disegno"></select></label><button class="primary" id="solve"><i data-icon="play"></i> Calcola</button></div></section>
+<section class="project"><div><div class="overline"><b></b> <span data-t="MODELLO ATTIVO">MODELLO ATTIVO</span></div><h1 id="model-name"></h1></div><div class="project-actions"><label class="check"><input id="show-decimals" type="checkbox" autocomplete="off"> <span data-t="Mostra decimali">Mostra decimali</span></label><label class="picker"><i data-icon="layers"></i><select id="example" aria-label="Scegli un tema o crea un disegno" data-t-aria-label="Scegli un tema o crea un disegno"></select></label><button class="primary" id="solve"><i data-icon="play"></i> <span data-t="Calcola">Calcola</span></button></div></section>
 <div class="workbench">
-<section class="panel board"><div class="panel-head"><h2><i data-icon="draft"></i> Tavola di disegno</h2><span id="counts" class="mono counts"></span></div>
+<section class="panel board"><div class="panel-head"><h2><i data-icon="draft"></i> <span data-t="Tavola di disegno">Tavola di disegno</span></h2><span id="counts" class="mono counts"></span></div>
 <div class="board-tools">
   <div id="tools" class="tool-group"></div>
-  <div class="view-tools" role="group" aria-label="Inquadratura della tavola">
-    <button id="zoom-out" title="Riduci lo zoom" aria-label="Riduci lo zoom"><i data-icon="zoomOut"></i></button>
-    <span id="zoom-level" aria-label="Livello di zoom">100%</span>
-    <button id="zoom-in" title="Aumenta lo zoom" aria-label="Aumenta lo zoom"><i data-icon="zoomIn"></i></button>
-    <button id="fit" title="Inquadra tutta la struttura" aria-label="Inquadra tutta la struttura"><i data-icon="fit"></i></button>
+  <div class="view-tools" role="group" aria-label="Inquadratura della tavola" data-t-aria-label="Inquadratura della tavola">
+    <button id="zoom-out" title="Riduci lo zoom" aria-label="Riduci lo zoom" data-t-title="Riduci lo zoom" data-t-aria-label="Riduci lo zoom"><i data-icon="zoomOut"></i></button>
+    <span id="zoom-level" aria-label="Livello di zoom" data-t-aria-label="Livello di zoom">100%</span>
+    <button id="zoom-in" title="Aumenta lo zoom" aria-label="Aumenta lo zoom" data-t-title="Aumenta lo zoom" data-t-aria-label="Aumenta lo zoom"><i data-icon="zoomIn"></i></button>
+    <button id="fit" title="Inquadra tutta la struttura" aria-label="Inquadra tutta la struttura" data-t-title="Inquadra tutta la struttura" data-t-aria-label="Inquadra tutta la struttura"><i data-icon="fit"></i></button>
   </div>
 </div>
-<div class="drawing"><svg id="canvas" viewBox="0 0 820 380" aria-label="Editor grafico della struttura piana"></svg><div class="drawing-foot"><span><b class="grid-dot"></b> Griglia <strong id="step-label"></strong></span><span id="pointer-pos"></span></div></div>
+<div class="drawing"><svg id="canvas" viewBox="0 0 820 380" aria-label="Editor grafico della struttura piana" data-t-aria-label="Editor grafico della struttura piana"></svg><div class="drawing-foot"><span><b class="grid-dot"></b> <span data-t="Griglia">Griglia</span> <strong id="step-label"></strong></span><span id="pointer-pos"></span></div></div>
 <div class="hint" id="hint" aria-live="polite"></div></section>
-<aside class="panel inspector"><div class="panel-head"><h2><i data-icon="sliders"></i> Proprietà</h2></div><div id="inspector"></div></aside>
+<aside class="panel inspector"><div class="panel-head"><h2><i data-icon="sliders"></i> <span data-t="Proprietà">Proprietà</span></h2></div><div id="inspector"></div></aside>
 </div>
-<section class="panel analysis"><div class="panel-head"><h2><i data-icon="wave"></i> Analisi strutturale</h2><span id="status" role="status"></span></div><div id="analysis"></div></section>
-</main><script src="src/solver.js"></script><script src="src/examples.js"></script><script src="src/numbers.js"></script><script src="src/drawing.js"></script><script src="src/section.js"></script><script src="src/report.js"></script><script src="src/navigation.js"></script><script src="src/app.js"></script>
+<section class="panel analysis"><div class="panel-head"><h2><i data-icon="wave"></i> <span data-t="Analisi strutturale">Analisi strutturale</span></h2><span id="status" role="status"></span></div><div id="analysis"></div></section>
+</main><script src="src/i18n.js"></script><script src="src/solver.js"></script><script src="src/examples.js"></script><script src="src/numbers.js"></script><script src="src/drawing.js"></script><script src="src/section.js"></script><script src="src/report.js"></script><script src="src/navigation.js"></script><script src="src/app.js"></script>
 </body></html>

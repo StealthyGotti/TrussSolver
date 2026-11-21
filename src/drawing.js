@@ -164,7 +164,7 @@ const Draft = (() => {
       drawing+=path('M -11 8 C -23 6 -23 -6 -12 -8 M -16 -12 L -12 -8 -16 -4',color,'none',1)
         +path('M 11 8 C 23 6 23 -6 12 -8 M 16 -12 L 12 -8 16 -4',color,'none',1);
     }
-    return `<g transform="translate(36 ${height-19})" aria-label="Convenzione positiva ${component}">${drawing}${label(29,4,component+' ['+unit+']',color,10,'start')}</g>`;
+    return `<g transform="translate(36 ${height-19})" aria-label="${typeof I18n === 'undefined' ? 'Convenzione positiva' : I18n.t('Convenzione positiva')} ${component}">${drawing}${label(29,4,component+' ['+unit+']',color,10,'start')}</g>`;
   }
 
   function diagramLabels(marks, width, height) {

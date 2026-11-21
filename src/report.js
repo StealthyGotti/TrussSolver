@@ -2,6 +2,8 @@
 // member reactions, equilibrium, the virtual work procedure and the section check.
 const Report = (() => {
   const {esc} = Draft;
+  // Interface texts are written in Italian and translated on display.
+  const tr = typeof I18n === 'undefined' ? (text, ...values) => text.replace(/\{(\d)\}/g, (_, i) => values[i]) : I18n.t;
   // W_AB becomes W with subscript AB, as on the exam sheets.
   const name = text => esc(text).replace(/([A-Za-zα-ω])_([A-Za-z0-9,]+)/g, '$1<sub>$2</sub>');
   const table = (heads, rows, style = '') => `<div class="scroll"><table class="${style}"><thead><tr>${
@@ -65,34 +67,33 @@ const Report = (() => {
 
   function release(d, model) {
     if (d.kind === 'r')
-      return [
-        'Libera la traslazione orizzontale', 'Libera la traslazione verticale', 'Libera la rotazione'
-      ][d.d] +
-          ' del nodo ' + model.nodes[d.k].id + '.';
+      return tr(['Libera la traslazione orizzontale del nodo {0}.', 'Libera la traslazione verticale del nodo {0}.',
+                 'Libera la rotazione del nodo {0}.'][d.d], model.nodes[d.k].id);
     const e = model.members[d.k];
     if (d.kind === 'n')
       return e.type === 'bar' ?
-          'Rimuovi la biella ' + e.a + e.b + ' e sostituiscila con il suo sforzo normale.' :
-          'Consenti uno scorrimento assiale all’origine dell’asta ' + e.a + e.b + '.';
+          tr('Rimuovi la biella {0} e sostituiscila con il suo sforzo normale.', e.a + e.b) :
+          tr('Consenti uno scorrimento assiale all’origine dell’asta {0}.', e.a + e.b);
     const at = d.kind === 'mi' ? e.a : e.b, spring = d.kind === 'mi' ? e.springI : e.springJ;
-    return (spring ? 'Scollega la molla rotazionale e lascia una cerniera' : 'Inserisci una cerniera') + ' all’estremo ' + at +
-        ' dell’asta ' + e.a + e.b + '.';
+    return spring ? tr('Scollega la molla rotazionale e lascia una cerniera all’estremo {0} dell’asta {1}.', at, e.a + e.b) :
+        tr('Inserisci una cerniera all’estremo {0} dell’asta {1}.', at, e.a + e.b);
   }
   function stateFor(r, stage) {
     return stage === 'final' ? r.final : stage === 'primary' ? r.primary : r.service[Number(stage)];
   }
 
   // Engineering values of the section check, written with decimals as on the exam sheets.
-  const digits = (value, places) => new Intl.NumberFormat('it-IT', {maximumFractionDigits: places, useGrouping: false})
+  const digits = (value, places) => new Intl.NumberFormat(NumericDisplay.locale, {maximumFractionDigits: places, useGrouping: false})
       .format(Math.abs(value) < 5 * 10 ** (-places - 1) ? 0 : value);
   function sectionSheet(model, h, fmt) {
     const s = model.section, {F, b} = model.ref, c = h.coefficients;
     const row = (symbol, value, unit, note = '') =>
         `<tr><td>${name(symbol)}</td><td>${note}</td><td>${value}</td><td>${unit}</td></tr>`;
     const stress = 'N/A − M<sub>x</sub> v/J<sub>u</sub>';
-    return `<h3>Sezione ${esc(s.at)} della trave ${esc(s.from)}${esc(s.to)}</h3>
-      <p>Azioni interne dal diagramma finale, con b = ${digits(b, 3)} mm e F = ${digits(F, 3)} N. Il lembo inferiore della sezione è sul lato tratteggiato, a destra andando da ${esc(s.from)} a ${esc(s.to)}. La quota y parte dal lembo inferiore, u e v sono gli assi baricentrici.</p>
-      <div class="section-sheet"><div class="plot"><svg id="section-plot" aria-label="Sezione con assi baricentrici ed ellisse d’inerzia"></svg></div>
+    return `<h3>${tr('Sezione {0} della trave {1}', esc(s.at), esc(s.from) + esc(s.to))}</h3>
+      <p>${tr('Azioni interne dal diagramma finale, con b = {0} mm e F = {1} N. Il lembo inferiore della sezione è sul lato tratteggiato, a destra andando da {2} a {3}. La quota y parte dal lembo inferiore, u e v sono gli assi baricentrici.',
+              digits(b, 3), digits(F, 3), esc(s.from), esc(s.to))}</p>
+      <div class="section-sheet"><div class="plot"><svg id="section-plot" aria-label="${tr('Sezione con assi baricentrici ed ellisse d’inerzia')}"></svg></div>
       <div class="scroll"><table class="values"><tbody>${
         row('A', digits(h.area, 1), 'mm²') + row('J_u', digits(h.inertia, 0), 'mm⁴') +
         row('J_v', digits(h.inertiaV, 0), 'mm⁴') + row('y_g', digits(h.centroid, 2), 'mm') +
@@ -103,11 +104,11 @@ const Report = (() => {
         row('σ_m', digits(h.maxStress, 1), 'N/mm²', stress) +
         row('x_c', digits(h.xCut, 2), 'mm') + row('y_c', digits(h.cut, 2), 'mm') + row('v_c', digits(h.vCut, 2), 'mm') +
         row('σ_c', digits(h.stress, 1), 'N/mm²', stress) +
-        row('τ_c', Number(h.shear.toPrecision(4)).toLocaleString('it-IT'), 'N/mm²',
+        row('τ_c', Number(h.shear.toPrecision(4)).toLocaleString(NumericDisplay.locale), 'N/mm²',
             '|T<sub>y</sub>| S* / (J<sub>u</sub> · ' + digits(h.web, 2) + ')') +
         row('σ_o', digits(h.vonMises, 1), 'N/mm²', '√(σ² + 3τ²)') + row('S*', digits(h.firstMoment, 0), 'mm³')
       }</tbody></table></div></div>
-      <p class="help">σ<sub>m</sub> è la tensione normale di massimo valore assoluto, nel punto di quota y<sub>m</sub>. Nel punto * di quota y<sub>c</sub> si calcolano σ<sub>c</sub>, τ<sub>c</sub> e la tensione di von Mises σ<sub>o</sub>. S* è il momento statico rispetto all’asse u della parte di sezione oltre la corda per *.</p>`;
+      <p class="help">${name(tr('σ_m è la tensione normale di massimo valore assoluto, nel punto di quota y_m. Nel punto * di quota y_c si calcolano σ_c, τ_c e la tensione di von Mises σ_o. S* è il momento statico rispetto all’asse u della parte di sezione oltre la corda per *.'))}</p>`;
   }
 
   // Forces and couple that each node applies to the two ends of every member, in global axes:
@@ -138,21 +139,21 @@ const Report = (() => {
         '<td>' + polynomial(field(state, c), f, shift + (n === 2 ? 1 : 0), fmt, '', f === 1) + '</td>').join('') +
         '<td class="note">' + note + '</td></tr>';
     const X = i => many ? xi(i) : 'X', value = i => X(i) + ' = ' + fmt(r.X[i]) + ' ' + unknowns[i].unit;
-    const picker = '<select id="member-equations" aria-label="Asta di cui mostrare le equazioni">' +
+    const picker = '<select id="member-equations" aria-label="' + tr('Asta di cui mostrare le equazioni') + '">' +
         r.elements.map((m, n) => `<option value="${n}" ${n === k ? 'selected' : ''}>${
-            esc((m.type === 'bar' ? 'Biella ' : 'Trave ') + m.a + m.b)}</option>`).join('') + '</select>';
+            esc(tr(m.type === 'bar' ? 'Biella {0}' : 'Trave {0}', m.a + m.b))}</option>`).join('') + '</select>';
     const sub = index => '<sub>' + index + '</sub>';
-    return `<h3>Equazioni di un’asta</h3>
-      <div class="result-bar equations-bar">${picker}<span class="subtext">${esc(e.a)} → ${esc(e.b)} · L = ${lengthOf(e.L, fmt)} · x parte da ${
-        esc(e.a)}${e.type === 'bar' ? ' · la biella ha solo sforzo normale' : ''}</span></div>
-      <div class="scroll"><table class="equations"><thead><tr><th>Struttura</th><th>N(x)</th><th>T(x)</th><th>M(x)</th><th></th></tr></thead><tbody>${
-        row('Principale', r.primary, 1, 0, unknowns.length ? 'carichi assegnati, ' + unknowns.map((_, i) => X(i)).join(' = ') + ' = 0' : 'carichi assegnati') +
-        unknowns.map((d, i) => row('Servizio' + (many ? ' ' + (i + 1) : ''), r.service[i], X(i), order(d) - 1,
-            'effetto di ' + name(X(i) + ' = ' + d.label))).join('') +
-        (unknowns.length ? row('Finale', r.final, 1, 0, unknowns.map((_, i) => value(i)).join(' · ')) : '')
+    return `<h3>${tr('Equazioni di un’asta')}</h3>
+      <div class="result-bar equations-bar">${picker}<span class="subtext">${esc(e.a)} → ${esc(e.b)} · L = ${lengthOf(e.L, fmt)} · ${tr('x parte da {0}', esc(e.a))}${
+        e.type === 'bar' ? tr(' · la biella ha solo sforzo normale') : ''}</span></div>
+      <div class="scroll"><table class="equations"><thead><tr><th>${tr('Struttura')}</th><th>N(x)</th><th>T(x)</th><th>M(x)</th><th></th></tr></thead><tbody>${
+        row(tr('Principale'), r.primary, 1, 0, unknowns.length ? tr('carichi assegnati, {0} = 0', unknowns.map((_, i) => X(i)).join(' = ')) : tr('carichi assegnati')) +
+        unknowns.map((d, i) => row(tr('Servizio') + (many ? ' ' + (i + 1) : ''), r.service[i], X(i), order(d) - 1,
+            tr('effetto di {0}', name(X(i) + ' = ' + d.label)))).join('') +
+        (unknowns.length ? row(tr('Finale'), r.final, 1, 0, unknowns.map((_, i) => value(i)).join(' · ')) : '')
       }</tbody></table></div>
-      <p class="help">${unknowns.length ? 'La riga finale è la somma della principale e dei servizi con il valore dell’incognita: S = S' + sub('o') + ' + ' +
-        unknowns.map((_, i) => X(i) + ' S' + sub(many ? i + 1 : 'x')).join(' + ') + '. ' : ''}N e T sono in F e M in Fb, con q = F/b. Il segno di M segue il tratteggio dell’asta.</p>`;
+      <p class="help">${unknowns.length ? tr('La riga finale è la somma della principale e dei servizi con il valore dell’incognita: {0}. ', 'S = S' + sub('o') + ' + ' +
+        unknowns.map((_, i) => X(i) + ' S' + sub(many ? i + 1 : 'x')).join(' + ')) : ''}${tr('N e T sono in F e M in Fb, con q = F/b. Il segno di M segue il tratteggio dell’asta.')}</p>`;
   }
 
   // Quadro contributi PLV of one unknown, with the rows of every member read from both ends.
@@ -204,25 +205,25 @@ const Report = (() => {
       const w0 = r.work0[i][k], tag = e.a + e.b, sub = t => '<sub>' + esc(t) + '</sub>';
       const stretch = e.eps ? Mechanics.integral(r.service[i].fields[k].N, [e.eps], e.L) : 0;
       if (Math.abs(stretch) > 1e-12)
-        extra(tag, 'elongazione asta N' + sub(first + tag) + 'ε' + sub(tag) + 'L' + sub(tag), known(stretch), unknowns.map(() => ''));
+        extra(tag, tr('elongazione asta') + ' N' + sub(first + tag) + 'ε' + sub(tag) + 'L' + sub(tag), known(stretch), unknowns.map(() => ''));
       if (r.workX[i].some(row => Math.abs(row[k].axial) > 1e-12) || Math.abs(w0.axial) > 1e-12)
-        extra(tag, 'deformabilità assiale ∫N' + sub(first + tag) + '(N' + sub('o' + tag) + '+XN' + sub('x' + tag) + ')/EA dx',
+        extra(tag, tr('deformabilità assiale') + ' ∫N' + sub(first + tag) + '(N' + sub('o' + tag) + '+XN' + sub('x' + tag) + ')/EA dx',
               blank(w0.axial), unknowns.map((_, j) => blankFlex(r.workX[i][j][k].axial, j)));
       if (e.springI || e.springJ)
-        extra(tag, 'molla asta W' + sub(first + tag) + '(W' + sub('o' + tag) + '+XW' + sub('x' + tag) + ')/k' + sub(tag),
+        extra(tag, tr('molla asta') + ' W' + sub(first + tag) + '(W' + sub('o' + tag) + '+XW' + sub('x' + tag) + ')/k' + sub(tag),
               blank(w0.spring), unknowns.map((_, j) => blankFlex(r.workX[i][j][k].spring, j)));
     });
     r.support0[i].forEach((p, n) => {
       const symbol = p.label.replace('_', '<sub>' + first) + '</sub>', sub = '<sub>' + esc(p.node) + '</sub>';
       if (p.stiffness)
-        extra(p.node, 'molla del vincolo ' + symbol + '(' + name(p.label.replace('_', '_o')) + '+X' + name(p.label.replace('_', '_x')) + ')/k' + sub,
+        extra(p.node, tr('molla del vincolo') + ' ' + symbol + '(' + name(p.label.replace('_', '_o')) + '+X' + name(p.label.replace('_', '_x')) + ')/k' + sub,
               blank(p.spring), unknowns.map((_, j) => blankFlex(r.supportX[i][j][n].spring, j)));
       if (p.moved)
-        extra(p.node, 'cedimento nodo −' + symbol + ' ' + ['u', 'v', 'φ']['HVW'.indexOf(p.label[0])] + sub, known(p.settle), unknowns.map(() => ''));
+        extra(p.node, tr('cedimento nodo') + ' −' + symbol + ' ' + ['u', 'v', 'φ']['HVW'.indexOf(p.label[0])] + sub, known(p.settle), unknowns.map(() => ''));
     });
-    extra('', 'totali', known(r.delta[i]), unknowns.map((_, j) => flex(r.flexibility[i][j], j)));
-    extra('', 'iperstatica ' + name(X(i) + '=' + d.label), fmt(r.X[i]) + d.unit, unknowns.map(() => ''));
-    return `<h3>Quadro contributi PLV per iperstatica ${name(X(i) + '=' + d.label)}</h3>
+    extra('', tr('totali'), known(r.delta[i]), unknowns.map((_, j) => flex(r.flexibility[i][j], j)));
+    extra('', tr('iperstatica') + ' ' + name(X(i) + '=' + d.label), fmt(r.X[i]) + d.unit, unknowns.map(() => ''));
+    return `<h3>${tr('Quadro contributi PLV per iperstatica')} ${name(X(i) + '=' + d.label)}</h3>
       <div class="scroll"><table class="quadro"><thead><tr>${heads.map(t => '<th>' + t + '</th>').join('')}</tr></thead><tbody>${
         rows}</tbody></table></div>`;
   }
@@ -262,29 +263,29 @@ const Report = (() => {
     const unknowns = r.free.map(j => r.descriptors[j]);
     const xi = i => 'X' + String(i + 1);
     const card = unknowns.length ? unknowns.map((d,i)=>
-      `<div class="result-card"><div class="cap">Incognita iperstatica ${unknowns.length > 1 ? xi(i) : 'X'} = ${name(d.label)}</div>
+      `<div class="result-card"><div class="cap">${tr('Incognita iperstatica')} ${unknowns.length > 1 ? xi(i) : 'X'} = ${name(d.label)}</div>
         <div class="big">${fmt(r.X[i])} <small>${d.unit}</small></div></div>`
-    ).join('') : '<div class="result-card"><div class="cap">Struttura isostatica</div><strong>Soluzione dall’equilibrio</strong></div>';
+    ).join('') : '<div class="result-card"><div class="cap">' + tr('Struttura isostatica') + '</div><strong>' + tr('Soluzione dall’equilibrio') + '</strong></div>';
     const stageNames = [
-      ['final', 'Struttura finale'], ['primary', 'Struttura principale'],
-      ...unknowns.map((d, i) => [String(i), 'Servizio ' + (unknowns.length > 1 ? (i + 1) + ' · ' : '· ') + d.label.replace('_', ' ') + ' = 1'])
+      ['final', tr('Struttura finale')], ['primary', tr('Struttura principale')],
+      ...unknowns.map((d, i) => [String(i), tr('Servizio') + ' ' + (unknowns.length > 1 ? (i + 1) + ' · ' : '· ') + d.label.replace('_', ' ') + ' = 1'])
     ];
     const state = stateFor(r, ui.stage), comp = ui.comp, units = comp === 'M' ? 'Fb' : 'F';
     const components = ['N','T','M'];
-    const names = {all:'Tutti', N:'N · Normale', T:'T · Taglio', M:'M · Momento'};
+    const names = {all: tr('Tutti'), N: tr('N · Normale'), T: tr('T · Taglio'), M: tr('M · Momento')};
     const shown = comp==='all' ? components : [comp];
     const nav = `<div class="result-nav">${
-        available.map(([key, title]) => `<button data-tab="${key}" class="${ui.tab === key ? 'on' : ''}">${title}</button>`)
+        available.map(([key, title]) => `<button data-tab="${key}" class="${ui.tab === key ? 'on' : ''}">${tr(title)}</button>`)
             .join('')}</div>`;
-    const stateSelect = `<select id="report-stage" aria-label="Struttura da analizzare">${
+    const stateSelect = `<select id="report-stage" aria-label="${tr('Struttura da analizzare')}">${
         stageNames.map(([v, t]) => `<option value="${v}" ${ui.stage === v ? 'selected' : ''}>${esc(t)}</option>`)
             .join('')}</select>`;
     const stageInfo = ui.stage === 'final' ?
-        'Azioni interne dopo la sovrapposizione.' :
+        tr('Azioni interne dopo la sovrapposizione.') :
         ui.stage === 'primary' ?
-        'Carichi assegnati sul sistema rilasciato. Tutte le incognite iperstatiche valgono zero.' :
-        `Sistema rilasciato con ${unknowns[+ui.stage].label} = +1 ${
-            unknowns[+ui.stage].unit}. Tutte le altre incognite e i carichi assegnati valgono zero.`;
+        tr('Carichi assegnati sul sistema rilasciato. Tutte le incognite iperstatiche valgono zero.') :
+        tr('Sistema rilasciato con {0} = +1 {1}. Tutte le altre incognite e i carichi assegnati valgono zero.',
+           unknowns[+ui.stage].label, unknowns[+ui.stage].unit);
     const plots = [];
     const plot = (id, options, caption = '', wide = false) => {
       plots.push([id, options]);
@@ -305,17 +306,17 @@ const Report = (() => {
       const controls = ['all',...components].map(c=>
         `<button class="${c===comp?'active':''}" aria-pressed="${c===comp}" data-comp="${c}">${names[c]}</button>`
       ).join('');
-      const heads = comp==='all' ? ['Asta','L','N(s) [F]','T(s) [F]','M(s) [Fb]'] :
-        ['Asta','L',comp+'(s) ['+units+']',comp+'(0)',comp+'(L)','Estremo interno'];
-      body = `<div class="result-bar">${stateSelect}<div class="seg" aria-label="Azione interna">${controls}</div></div>
+      const heads = comp==='all' ? [tr('Asta'),'L','N(s) [F]','T(s) [F]','M(s) [Fb]'] :
+        [tr('Asta'),'L',comp+'(s) ['+units+']',comp+'(0)',comp+'(L)',tr('Estremo interno')];
+      body = `<div class="result-bar">${stateSelect}<div class="seg" aria-label="${tr('Azione interna')}">${controls}</div></div>
         <div class="${comp==='all'?'diagram-sheet':'result-grid'}">${
           shown.map(c => plot('result-plot-' + c, {state, component: c, showLoads: ui.showLoads, reduced: ui.stage !== 'final'})).join('')
         }<div class="diagram-notes">${card}
-        <p class="subtext">${name(stageInfo)}</p><label class="check"><input id="show-loads" type="checkbox" ${ui.showLoads?'checked':''}> Mostra i carichi sullo schema</label>
-        <p class="help">Diagrammi in multipli di F per normale e taglio e di Fb per il momento. Le ordinate positive sono disegnate sul lato tratteggiato. Nel diagramma M la curva si trova sul lato delle fibre tese.</p></div></div>
+        <p class="subtext">${name(stageInfo)}</p><label class="check"><input id="show-loads" type="checkbox" ${ui.showLoads?'checked':''}> ${tr('Mostra i carichi sullo schema')}</label>
+        <p class="help">${tr('Diagrammi in multipli di F per normale e taglio e di Fb per il momento. Le ordinate positive sono disegnate sul lato tratteggiato. Nel diagramma M la curva si trova sul lato delle fibre tese.')}</p></div></div>
         ${memberEquations(model, r, ui.member, fmt, xi)}
-        <details ${comp==='all'?'':'open'}><summary>Equazioni e valori di tutte le aste · ${esc(stageNames.find(([v]) => v === ui.stage)[1])}</summary>${table(heads,sections)}
-        <p class="subtext">Ascissa s in unità di b dal primo al secondo nodo dell’asta. I segni di M(s) seguono il tratteggio scelto per ciascuna asta.</p></details>`;
+        <details ${comp==='all'?'':'open'}><summary>${tr('Equazioni e valori di tutte le aste')} · ${esc(stageNames.find(([v]) => v === ui.stage)[1])}</summary>${table(heads,sections)}
+        <p class="subtext">${tr('Ascissa s in unità di b dal primo al secondo nodo dell’asta. I segni di M(s) seguono il tratteggio scelto per ciascuna asta.')}</p></details>`;
     } else if (ui.tab === 'reactions') {
       const reactions = r.descriptors.flatMap(
           (d, i) => d.kind === 'r' && !d.artificial && (ui.stage === 'final' || !r.free.includes(i)) ?
@@ -327,32 +328,32 @@ const Report = (() => {
       body = `<div class="result-bar">${stateSelect}</div>
         <div class="result-grid reactions">${plot('reactions-plot', {state, exploded: true}, '', true)}<div class="diagram-notes">${card}
         <p class="subtext">${name(stageInfo)}</p>
-        <p class="help">Ogni asta è isolata dai nodi. Le frecce mostrano le forze e le coppie che i nodi le trasmettono, con il loro verso effettivo e il valore in multipli di F e di Fb.</p>
-        <h4>Reazioni vincolari</h4>${reactions.length ? table(['Componente', 'Valore'], reactions) : '<p class="subtext">Corpo libero in equilibrio.</p>'}
+        <p class="help">${tr('Ogni asta è isolata dai nodi. Le frecce mostrano le forze e le coppie che i nodi le trasmettono, con il loro verso effettivo e il valore in multipli di F e di Fb.')}</p>
+        <h4>${tr('Reazioni vincolari')}</h4>${reactions.length ? table([tr('Componente'), tr('Valore')], reactions) : '<p class="subtext">' + tr('Corpo libero in equilibrio.') + '</p>'}
         </div></div>
-        <details><summary>Azioni dei nodi sulle aste</summary>${
-          table(['Asta', 'Estremo', 'H → [F]', 'V ↑ [F]', 'W ↺ [Fb]'], ends)}
-        <p class="subtext">H_AB, V_AB e W_AB agiscono sull’asta AB nell’estremo A, positive verso destra, verso l’alto e in senso antiorario.</p></details>`;
+        <details><summary>${tr('Azioni dei nodi sulle aste')}</summary>${
+          table([tr('Asta'), tr('Estremo'), 'H → [F]', 'V ↑ [F]', 'W ↺ [Fb]'], ends)}
+        <p class="subtext">${name(tr('H_AB, V_AB e W_AB agiscono sull’asta AB nell’estremo A, positive verso destra, verso l’alto e in senso antiorario.'))}</p></details>`;
     } else if (ui.tab === 'section') {
       body = sectionSheet(model, section, fmt);
     } else if (ui.tab === 'equilibrium') {
-      body = `<h3>Equilibrio ai nodi</h3><p>Per ogni nodo si impongono ΣFₓ = 0, ΣFᵧ = 0 e, se trasmette coppie, ΣM = 0. Le incognite d’asta sono lo sforzo normale N<sub>AB</sub> = N(0) e le coppie di estremità W<sub>AB</sub> = −M(0) e W<sub>BA</sub> = M(L), positive se antiorarie sull’asta. Agli estremi incernierati il momento vale zero. Ogni pattino o carrello interno aggiunge l’equazione che annulla la forza trasmessa lungo lo scorrimento.</p>
+      body = `<h3>${tr('Equilibrio ai nodi')}</h3><p>${name(tr('Per ogni nodo si impongono ΣFₓ = 0, ΣFᵧ = 0 e, se trasmette coppie, ΣM = 0. Le incognite d’asta sono lo sforzo normale N_AB = N(0) e le coppie di estremità W_AB = −M(0) e W_BA = M(L), positive se antiorarie sull’asta. Agli estremi incernierati il momento vale zero. Ogni pattino o carrello interno aggiunge l’equazione che annulla la forza trasmessa lungo lo scorrimento.'))}</p>
       <div class="formula">N(s) = N(0) − p s<br>T(0) = [M(L) − M(0)] / L − q L / 2<br>T(s) = T(0) + q s<br>M(s) = M(0) + T(0) s + q s² / 2</div>
-      <p class="subtext">p e q sono qui le componenti del carico distribuito lungo l’asta e di traverso. Il momento locale è positivo con fibre tese a destra andando dal primo al secondo nodo.</p>
-      <h3>Sistema assemblato</h3><p>${r.rowLabels.length} equazioni indipendenti e ${
-          r.descriptors.length} incognite. Grado di iperstaticità <strong>${r.free.length}</strong>.</p>${
+      <p class="subtext">${tr('p e q sono qui le componenti del carico distribuito lungo l’asta e di traverso. Il momento locale è positivo con fibre tese a destra andando dal primo al secondo nodo.')}</p>
+      <h3>${tr('Sistema assemblato')}</h3><p>${tr('{0} equazioni indipendenti e {1} incognite. Grado di iperstaticità {2}.', r.rowLabels.length,
+          r.descriptors.length, '<strong>' + r.free.length + '</strong>')}</p>${
           r.floating ?
-              '<p class="help">Per il corpo libero si fissano tre moti rigidi di riferimento. Le tre reazioni ausiliarie, indicate con *, sono nulle.</p>' :
+              '<p class="help">' + tr('Per il corpo libero si fissano tre moti rigidi di riferimento. Le tre reazioni ausiliarie, indicate con *, sono nulle.') + '</p>' :
               ''}
       ${
           table(
-              ['Equazione', ...r.descriptors.map(d => d.label + (d.artificial ? '*' : '')), 'Termine noto'],
-              r.equations.map((row, i) => [r.rowLabels[i], ...row.map(fmt)]))}
-      <h3>Soluzioni dei sistemi statici</h3><p class="help">Principale: carichi reali con X = 0. In ogni servizio si annullano i carichi reali e si assegna +1 alla corrispondente incognita.</p>
+              [tr('Equazione'), ...r.descriptors.map(d => d.label + (d.artificial ? '*' : '')), tr('Termine noto')],
+              r.equations.map((row, i) => [r.rowLabels[i].replace('scorrimento in', tr('scorrimento in')), ...row.map(fmt)]))}
+      <h3>${tr('Soluzioni dei sistemi statici')}</h3><p class="help">${tr('Principale: carichi reali con X = 0. In ogni servizio si annullano i carichi reali e si assegna +1 alla corrispondente incognita.')}</p>
       ${
           table(
               [
-                'Incognita', 'Unità', 'Principale', ...unknowns.map((_, i) => 'Servizio ' + (i + 1)), 'Finale'
+                tr('Incognita'), tr('Unità'), tr('Principale'), ...unknowns.map((_, i) => tr('Servizio') + ' ' + (i + 1)), tr('Finale')
               ],
               r.descriptors.map(
                   (d, i) =>
@@ -360,24 +361,25 @@ const Report = (() => {
                        ...[r.primary, ...r.service, r.final].map(s => fmt(s.vector[i]))]))}`;
     } else if (!unknowns.length) {
       body =
-          '<h3>Struttura isostatica</h3><p>Le equazioni di equilibrio determinano tutte le reazioni e le azioni interne. La struttura principale coincide con quella finale.</p>';
+          '<h3>' + tr('Struttura isostatica') + '</h3><p>' + tr('Le equazioni di equilibrio determinano tutte le reazioni e le azioni interne. La struttura principale coincide con quella finale.') + '</p>';
     } else {
       const many = unknowns.length > 1, X = i => many ? xi(i) : 'X';
       const choices = unknowns.map((d, i) => `<li><strong>${name(X(i) + ' = ' + d.label)}</strong> · ${esc(release(d, model))}</li>`).join('');
-      body = `<h3>Schema di calcolo iperstatico</h3><ul class="choices">${choices}</ul>
+      body = `<h3>${tr('Schema di calcolo iperstatico')}</h3><ul class="choices">${choices}</ul>
         <div class="diagram-sheet">${
-          plot('plv-scheme', {schema: true, reduced: true}, 'Schema di calcolo iperstatico') +
-          plot('plv-primary', {state: r.primary, component: 'M', reduced: true}, 'M<sub>o</sub> flessione da carichi assegnati') +
+          plot('plv-scheme', {schema: true, reduced: true}, tr('Schema di calcolo iperstatico')) +
+          plot('plv-primary', {state: r.primary, component: 'M', reduced: true}, 'M<sub>o</sub> ' + tr('flessione da carichi assegnati')) +
           unknowns.map((d, i) => plot('plv-service-' + i, {state: r.service[i], component: 'M', reduced: true},
-              'M<sub>' + (many ? i + 1 : 'x') + '</sub> flessione da iperstatica ' + X(i) + '=1')).join('')}</div>
-        <p class="help">Il lavoro virtuale del servizio misura lo spostamento relativo lungo il rilascio, che nella struttura reale è nullo: δ<sub>o</sub> + Σ f X = 0. ${
-          model.axial ? 'Deformabilità assiale e flessionale attive.' : 'Si trascura la deformabilità assiale elastica.'} I momenti sono positivi con fibre tese a destra percorrendo l’asta nel verso della freccia →, e l’ascissa x parte dalla prima lettera.</p>
+              'M<sub>' + (many ? i + 1 : 'x') + '</sub> ' + tr('flessione da iperstatica') + ' ' + X(i) + '=1')).join('')}</div>
+        <p class="help">${name(tr('Il lavoro virtuale del servizio misura lo spostamento relativo lungo il rilascio, che nella struttura reale è nullo: δ_o + Σ f X = 0.'))} ${
+          model.axial ? tr('Deformabilità assiale e flessionale attive.') : tr('Si trascura la deformabilità assiale elastica.')} ${
+          tr('I momenti sono positivi con fibre tese a destra percorrendo l’asta nel verso della freccia →, e l’ascissa x parte dalla prima lettera.')}</p>
         ${unknowns.map((_, i) => workSheet(model, r, i, fmt, xi) +
-            '<details open><summary>Sviluppi di calcolo iperstatica' + (many ? ' ' + xi(i) : '') + '</summary>' + developments(r, i, fmt, xi) + '</details>').join('')}
-        <h3>Soluzione e sovrapposizione</h3><div class="formula">${
+            '<details open><summary>' + tr('Sviluppi di calcolo iperstatica') + (many ? ' ' + xi(i) : '') + '</summary>' + developments(r, i, fmt, xi) + '</details>').join('')}
+        <h3>${tr('Soluzione e sovrapposizione')}</h3><div class="formula">${
           r.flexibility.map((row, i) => fmt(r.delta[i]) + row.map((v, j) => (v < 0 ? ' − ' : ' + ') + fmt(Math.abs(v)) + ' ' + X(j)).join('') + ' = 0').join('<br>')}<br>${
           r.X.map((x, j) => name(X(j) + ' = ' + unknowns[j].label) + ' = ' + fmt(x) + ' ' + unknowns[j].unit).join(' · ')}</div>
-        <p>Per ciascuna azione S ∈ {N, T, M} il diagramma finale si ottiene da S = S<sub>o</sub> + Σ X S<sub>x</sub>.</p>`;
+        <p>${name(tr('Per ciascuna azione S ∈ {N, T, M} il diagramma finale si ottiene da S = S_o + Σ X S_x.'))}</p>`;
     }
     host.innerHTML = nav + '<div class="report-body">' + body + '</div>';
     host.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => onChange({tab: b.dataset.tab}));
