@@ -88,3 +88,36 @@ test('Tema 13: cedimento imposto in I, carrello interno in F e asta lunga √5 b
   near(evaluate(r.final.fields[4].T, 0), Math.sqrt(5) / 2);
   near(evaluate(r.final.fields[8].T, 0), -43 / 8);
 });
+
+// A sheet that is not among the models: three internal rollers, a rotational spring beside a roller,
+// a double pendulum on the ground, loads on one side of two rollers and a member √5 b long.
+test('Tema di controllo: carrelli interni, molla, doppio pendolo e asta √5 b insieme', () => {
+  const {node, beam} = require('../src/examples');
+  const model = {
+    axial: false,
+    release: 'B/C/mi',
+    nodes: [
+      node('A', 0, 2, 'pin'), node('B', 0, 1), node('C', 0, 0), node('D', 3, 0), node('E', 4, 0, 'sliderX'),
+      node('F', 2, 1, 'free', {m: -1}), node('G', 3, 1)
+    ],
+    members: [
+      beam('A', 'B'), beam('B', 'C', {springI: 2}), beam('C', 'D', {eps: -1}), beam('D', 'E'),
+      beam('C', 'F', {hi: true, slideI: 'incl', slideIdx: 0, slideIdy: 1, fyI: -1}),
+      beam('B', 'F', {qy: -1, hi: true, slideI: 'incl', slideIdx: 1, slideIdy: 0}), beam('F', 'G'),
+      beam('G', 'D', {hj: true, slideJ: 'incl', slideJdx: 1, slideJdy: 0, fxJ: -1})
+    ]
+  };
+  const r = solve(model);
+  assert.equal(r.X.length, 1);
+  assert.equal(unknown(r), 'W_BC');
+  near(r.X[0], 108 / 115);
+  near(r.delta[0], -18);
+  near(r.flexibility[0][0], 115 / 6);
+  near(r.work0[0][2].bend, -9);
+  near(r.work0[0][2].imposed, -3);
+  near(r.workX[0][0][1].spring, 1 / 2);
+  // Primary moments of the sheet: CF from the roller in C, BF under the distributed load.
+  near(evaluate(r.primary.fields[4].M, Math.sqrt(5)), -3);
+  near(evaluate(r.primary.fields[5].M, 1), 3 / 2);
+  near(evaluate(r.primary.fields[5].M, 2), 2);
+});
