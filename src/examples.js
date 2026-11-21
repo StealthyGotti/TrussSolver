@@ -73,7 +73,23 @@ const Models = (() => {
       beam('B', 'E', {type: 'bar', eps: -1}), beam('C', 'H', {slideI: 'axis'}), beam('E', 'G', {qx: 1, slideJ: 'normal'})
     ]
   };
-  return {node, beam, examples: [firstExam, inclinedRoller, internalSliders]};
+  // Tema 8: doppio pendolo a terra in D, carrello con molla traslazionale in E, asta inclinata AB.
+  const springSupport = {
+    title: 'Tema 8 · Doppio pendolo e molla traslazionale',
+    ref: {b: 250, F: 1240},
+    grid: 1,
+    axial: false,
+    release: 'B/C/mi',
+    nodes: [
+      node('A', 0, 3, 'rollerY'), node('B', 4, 0), node('C', 6, 0), node('D', 8, 0, 'sliderY'),
+      node('E', 10, 0, 'rollerX', {kx: 4}), node('F', 6, 5, 'free', {m: -1}), node('G', 8, 5), node('H', 10, 5)
+    ],
+    members: [
+      beam('A', 'B', {kappa: -1, fxI: 1}), beam('B', 'C'), beam('C', 'D'), beam('D', 'E', {hj: true}),
+      beam('F', 'C', {hj: true}), beam('F', 'G', {hj: true}), beam('G', 'H'), beam('H', 'E', {qx: -1, hj: true})
+    ]
+  };
+  return {node, beam, examples: [firstExam, inclinedRoller, springSupport, internalSliders]};
 })();
 if (typeof module !== 'undefined')
   module.exports = Models;

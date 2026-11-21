@@ -50,3 +50,22 @@ test('Tema 11: pattini interni, carico sul lato dell’asta e molla rotazionale'
   near(evaluate(eg.T, 1), 0);
   near(evaluate(eg.T, 0), -1);
 });
+
+test('Tema 8: doppio pendolo a terra, carrello con molla traslazionale e asta inclinata', () => {
+  const r = solve(exam(8));
+  assert.equal(r.X.length, 1);
+  assert.equal(unknown(r), 'W_BC');
+  near(r.X[0], -553 / 264);
+  near(r.delta[0], 553 / 24);
+  near(r.flexibility[0][0], 11);
+  near(r.elements[0].L, 5);
+  check(r, [
+    ['A/B', -1647 / 1760, 0, 553 / 264], ['B/C', -1, 553 / 264, 289 / 176], ['C/D', 7 / 20, 289 / 176, -301 / 66],
+    ['D/E', 7 / 20, 23 / 4, 0], ['F/C', -23 / 8, 27 / 4, 0], ['F/G', -27 / 20, -23 / 4, 0],
+    ['G/H', -27 / 20, 0, 23 / 4], ['H/E', 23 / 8, 23 / 4, 0]
+  ]);
+  // The roller in E pushes on its spring with 4F, but no virtual reaction acts there.
+  near(r.final.vector[r.descriptors.findIndex(d => d.label === 'H_E')], 4);
+  near(r.final.vector[r.descriptors.findIndex(d => d.label === 'V_A')], -239 / 1056);
+  near(r.supportX[0][0][0].spring, 0);
+});
