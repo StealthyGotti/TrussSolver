@@ -2,10 +2,41 @@
   "version": 2,
   "model": {
     "title": "Tema 1 · Telaio con biella AB",
-    "exercise": "tema-1",
     "ref": {
       "b": 480,
       "F": 1500
+    },
+    "section": {
+      "from": "H",
+      "to": "F",
+      "at": "H",
+      "cut": 15,
+      "profile": [
+        [
+          0,
+          21
+        ],
+        [
+          14,
+          21
+        ],
+        [
+          14,
+          7
+        ],
+        [
+          50,
+          7
+        ],
+        [
+          50,
+          49
+        ],
+        [
+          63,
+          49
+        ]
+      ]
     },
     "grid": 0.5,
     "axial": false,

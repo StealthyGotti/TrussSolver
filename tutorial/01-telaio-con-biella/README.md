@@ -1,86 +1,87 @@
 # 1 · Telaio libero con biella AB
 
-Apri `index.html` e premi **Calcola** sul tema iniziale. Puoi anche scegliere **Apri** e caricare [modello.json](modello.json). Lo scopo è trovare lo sforzo nella biella AB e i diagrammi del telaio usando come incognita il momento trasmesso in A.
+All’avvio l’editor mostra questo tema. In alternativa scegli **Apri** e carica [modello.json](modello.json). Lo scopo è trovare lo sforzo nella biella AB e i diagrammi del telaio usando come incognita la coppia $W_{AE}$ trasmessa dal nodo A all’asta AE.
 
 ![Telaio con le cerniere in D, E e F, la biella AB e i carichi applicati](schema.svg)
 
 ## 1. Controlla l’equilibrio prima del rilascio
 
-Il telaio ha larghezza $2b$ e altezza $4b$. Usa $b=0{,}48$ m, $F=1{,}5$ kN e $q=F/b$. Su DG agisce un carico uniforme verso il basso, su EH uno verso l’alto. Entrambi hanno intensità $7q$ e lunghezza $b$. In H agisce una coppia antioraria $5Fb$. La biella presenta una deformazione assiale impressa uniforme $\varepsilon_{AB}=-b^2F/EJ$. Si trascura la deformabilità assiale elastica.
+Il telaio ha larghezza $2b$ e altezza $4b$. Su DG agisce un carico uniforme verso il basso e su EH uno verso l’alto, entrambi di intensità $7q$ e lunghezza $b$. In H agisce una coppia antioraria $5W=5Fb$. La biella ha un’elongazione termica $\varepsilon_{AB}=-b^2F/EJ$ e si trascura la deformabilità assiale elastica.
 
-Il telaio è libero. Le forze orizzontali danno $2F-3F+F=0$ e i due carichi verticali hanno risultanti opposte. Prendendo i momenti rispetto a E, con segno positivo antiorario, si ottiene
+Il telaio non ha vincoli a terra. Le forze orizzontali danno $2F-3F+F=0$ e i due carichi verticali hanno risultanti opposte. Per i momenti rispetto a E, positivi se antiorari:
 
 $$
 (3F)(2b)-F(4b)-(7F)(3b/2)+(7F)(b/2)+5Fb=0.
 $$
 
-I tre riferimenti che il solutore introduce per bloccare i moti rigidi hanno quindi reazioni nulle.
+I carichi sono quindi autoequilibrati. Il solutore blocca i tre moti rigidi con vincoli ausiliari, che risultano scarichi.
 
 ## 2. Costruisci principale e servizio
 
-Il telaio ha una sola iperstatica. Rilascia il momento in A sull’estremità finale dell’asta **E → A** e chiama $X$ la coppia antioraria esercitata su quell’estremità. Sulla parte collegata agisce la coppia opposta.
+Il telaio ha una sola iperstatica. Inserisci una cerniera all’estremo A dell’asta AE e chiama $X=W_{AE}$ la coppia antioraria che il nodo A applica a quell’estremo. Sul nodo agisce la coppia opposta.
 
-- **Principale.** Poni $X=0$, mantieni i carichi assegnati e risolvi l’equilibrio. AB ha solo sforzo normale. Il momento si annulla nelle cerniere D, E e F e sul lato rilasciato in A.
-- **Servizio.** Togli i carichi assegnati e applica la coppia unitaria al rilascio con il verso scelto. Indica con $m_1$ il momento e con $n_1$ la normale per unità di $X$. La deformazione impressa entrerà nel lavoro virtuale.
+- **Principale.** Poni $X=0$ e risolvi l’equilibrio con i carichi assegnati. AB ha solo sforzo normale e il momento si annulla nelle cerniere D, E, F e nell’estremo rilasciato.
+- **Servizio.** Togli i carichi e applica la coppia unitaria al rilascio. $M_x$ è il momento e $N_x$ la normale per $X=1$.
 
-Usa $\xi=s/b$ misurata dalla prima lettera alla seconda. Le colonne dei momenti usano gli assi locali del calcolo, così puoi moltiplicarle direttamente nel PLV. Per esempio, sul tratto DG l’equilibrio di un segmento dà $M_0(s)=(11F/4)s-(7q/2)s^2$. Il primo termine viene dal taglio in D, il secondo dal carico distribuito.
+Nella scheda **Lavori virtuali** trovi lo schema di calcolo, i due diagrammi e il quadro dei contributi. La tabella qui sotto riporta le righe del quadro, con $\xi=x/b$ misurata dalla prima lettera dell’asta.
 
-| Tratto | $L/b$ | $M_0/(Fb)$ | $m_1$ | $N_0/F$ | $b\,n_1$ |
-| --- | ---: | --- | --- | ---: | ---: |
-| AB | 2 | 0 | 0 | 35/8 | 1 |
-| CD | 1 | $-11/4+11\xi/4$ | 0 | −11/8 | −1/2 |
-| EA | 2 | 0 | $\xi/2$ | −11/4 | 0 |
-| CA | 2 | $11/4-11\xi/8$ | $-\xi/2$ | −11/4 | 0 |
-| BF | 2 | $4-2\xi$ | $1-\xi/2$ | −17/4 | 0 |
-| GB | 2 | $-3/4+19\xi/8$ | $\xi/2$ | −17/4 | 0 |
-| HF | 1 | $-17/4+17\xi/4$ | 0 | −2 | −1/2 |
-| DG | 1 | $11\xi/4-7\xi^2/2$ | 0 | −11/8 | −1/2 |
-| EH | 1 | $-11\xi/4+7\xi^2/2$ | 0 | −2 | −1/2 |
+| Asta | $L/b$ | $M_o/(Fb)$ | $M_x$ |
+| --- | ---: | --- | --- |
+| AB | 2 | 0 | 0 |
+| CD | 1 | $-11/4+11\xi/4$ | 0 |
+| AE | 2 | 0 | $-1+\xi/2$ |
+| CA | 2 | $11/4-11\xi/8$ | $-\xi/2$ |
+| BF | 2 | $4-2\xi$ | $1-\xi/2$ |
+| GB | 2 | $-3/4+19\xi/8$ | $\xi/2$ |
+| HF | 1 | $-17/4+17\xi/4$ | 0 |
+| DG | 1 | $11\xi/4-7\xi^2/2$ | 0 |
+| EH | 1 | $-11\xi/4+7\xi^2/2$ | 0 |
+
+Per esempio, su DG l’equilibrio di un tratto dà $M_o=(11F/4)x-(7q/2)x^2$: il primo termine viene dal taglio in D, il secondo dal carico distribuito.
 
 ## 3. Imponi la congruenza in A
 
-La rotazione relativa al rilascio deve essere nulla. In **Lavori virtuali** trovi le due quantità dell’equazione $\delta_{10}+f_{11}X=0$.
+La rotazione relativa al rilascio deve essere nulla:
 
 $$
-\delta_{10}=\sum_e\int_e\frac{m_1 M_0}{EJ}\,ds
-+\int_{AB} n_1\varepsilon_{AB}\,ds,
-\qquad
-f_{11}=\sum_e\int_e\frac{m_1^2}{EJ}\,ds.
+\delta_o+f\,X=0,\qquad
+\delta_o=\sum\int\frac{M_xM_o}{EJ}\,dx+N_{x,AB}\,\varepsilon_{AB}L_{AB},\qquad
+f=\sum\int\frac{M_x^2}{EJ}\,dx.
 $$
 
-Per esempio, su CA il prodotto $(-\xi/2)(11/4-11\xi/8)$ integrato tra 0 e 2 dà $-11/12$. La deformazione impressa della biella contribuisce per $(1/b)(-b^2F/EJ)(2b)=-2Fb^2/EJ$.
+Su CA il prodotto $(-\xi/2)(11/4-11\xi/8)$ integrato fra 0 e 2 dà $-11/12$. Nel servizio la biella ha $N_x=1/b$, quindi l’elongazione contribuisce con $(1/b)(-b^2F/EJ)(2b)=-2Fb^2/EJ$.
 
-| Contributo | $\delta_{10}$ in unità $Fb^2/EJ$ | $f_{11}$ in unità $b/EJ$ |
+| Contributo | $\delta_o$ in $Fb^2/EJ$ | $f$ in $b/EJ$ |
 | --- | ---: | ---: |
-| EA | 0 | 2/3 |
+| AE | 0 | 2/3 |
 | CA | −11/12 | 2/3 |
 | BF | 8/3 | 2/3 |
 | GB | 29/12 | 2/3 |
-| AB, deformazione impressa | −2 | 0 |
+| AB, elongazione | −2 | 0 |
 | **Totale** | **13/6** | **8/3** |
 
 $$
-X=-\frac{\delta_{10}}{f_{11}}=-\frac{13}{16}Fb=-0{,}585\ \mathrm{kN\,m}.
+X=W_{AE}=-\frac{13}{16}Fb.
 $$
 
 ## 4. Ricostruisci i diagrammi e verifica la sezione H
 
-Su ogni tratto usa $M=M_0+Xm_1$, $N=N_0+Xn_1$ e $T=dM/ds$ negli assi locali della tabella. Per AB ottieni $N_{AB}=(35/8-13/16)F=57F/16=5{,}34375$ kN, quindi la biella è tesa. Sul tratto caricato DG il taglio si annulla a $s=11b/28$, dove il momento ha un estremo.
+Su ogni asta $M=M_o+XM_x$ e $N=N_o+XN_x$. Per la biella $N_{AB}=(35/8-13/16)F=57F/16$, quindi AB è tesa. La scheda **Reazioni** mostra le aste isolate con le azioni dei nodi.
 
-![Diagrammi finali affiancati di normale, taglio e momento con il lembo di riferimento tratteggiato](diagrammi.svg)
+![Diagrammi finali di normale, taglio e momento con il lembo di riferimento tratteggiato](diagrammi.svg)
 
-In H leggi le azioni **dal lato HF**, a $s=0$. La coppia applicata produce un salto nel diagramma del momento fra i due lati del nodo.
+La scheda **Sezione** legge le azioni all’estremo H della trave HF: $N=-51F/32$, $T=17F/4$ e $M=-17Fb/4$. Con $b=480$ mm e $F=1500$ N diventano $-2391$ N, $6375$ N e $-3\,060\,000$ N·mm.
 
-| Azione in H | Valore |
+| Grandezza | Valore |
 | --- | ---: |
-| $N$ | −2,390625 kN |
-| $T$ | +6,375 kN |
-| $M$ | −3,060 kN·m |
+| $A$ | 1183 mm² |
+| $y_g$ | 38,98 mm |
+| $J_u$ | 549 474 mm⁴ |
+| $S^*$ nel punto a $y=15$ mm | 9573 mm³ |
+| $\sigma_m$ al lembo inferiore | −219,1 N/mm² |
+| $\sigma_c$, $\tau_c$ nel punto * | −135,6 e 15,87 N/mm² |
+| von Mises nel punto * | 138,3 N/mm² |
 
-Nella scheda **Sezione H** la quota $y$ parte dal lembo inferiore. Le tre fasce hanno larghezza × altezza di 21 × 14, 7 × 36 e 49 × 13 mm, dal basso verso l’alto. Sommando aree e momenti statici ottieni $A=1183$ mm² e $y_g=38{,}979$ mm. Con il teorema di trasporto risulta $J_x=549474$ mm⁴. Nel punto a $y=15$ mm lo spessore è 7 mm e il momento statico della parte superiore è circa 9573 mm³.
-
-Usa N e mm in $\sigma=N/A-M(y-y_g)/J_x$ e $\tau=TQ/(J_x t)$. Nel punto trovi $\sigma=-135{,}6$ MPa, $\tau=15{,}87$ MPa e $\sqrt{\sigma^2+3\tau^2}=138{,}3$ MPa. La tensione normale di massimo valore assoluto è **−219,1 MPa** al lembo inferiore.
-
-**Controllo nell’editor.** In **Modello completo → Incognita da rilasciare** scegli la normale di A–B e premi di nuovo **Calcola**. Ora l’incognita è direttamente $N_{AB}=5{,}34375$ kN. Principale e servizio cambiano, mentre i tre diagrammi finali coincidono con quelli sopra.
+**Controllo con un’altra incognita.** In **Modello completo → Incognita da rilasciare** scegli N_AB e premi di nuovo **Calcola**. Ora $X=N_{AB}=57F/16$. Principale e servizio cambiano, i diagrammi finali restano gli stessi.
 
 [Indice dei tutorial](../README.md)

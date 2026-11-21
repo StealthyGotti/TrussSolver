@@ -1,0 +1,234 @@
+{
+  "version": 2,
+  "model": {
+    "title": "Tema 2 · Carrello inclinato e molla rotazionale",
+    "ref": {
+      "b": 510,
+      "F": 5610
+    },
+    "section": {
+      "from": "D",
+      "to": "E",
+      "at": "E",
+      "cut": 13,
+      "profile": [
+        [
+          0,
+          24
+        ],
+        [
+          12,
+          24
+        ],
+        [
+          12,
+          12
+        ],
+        [
+          35,
+          12
+        ],
+        [
+          35,
+          48
+        ],
+        [
+          48,
+          48
+        ],
+        [
+          54,
+          0
+        ]
+      ]
+    },
+    "grid": 0.5,
+    "axial": false,
+    "release": "F/D/mi",
+    "nodes": [
+      {
+        "id": "E",
+        "x": 0,
+        "y": 2,
+        "support": "rollerX",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "G",
+        "x": 1,
+        "y": 2,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "B",
+        "x": 2,
+        "y": 2,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "D",
+        "x": 0,
+        "y": 1,
+        "support": "rollerX",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "A",
+        "x": 2,
+        "y": 1,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": -1
+      },
+      {
+        "id": "F",
+        "x": 0,
+        "y": 0,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "C",
+        "x": 2,
+        "y": 0,
+        "support": "rollerY",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      }
+    ],
+    "members": [
+      {
+        "a": "A",
+        "b": "B",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0,
+        "fxJ": -1
+      },
+      {
+        "a": "C",
+        "b": "A",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": true,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": -1,
+        "kappa": 0,
+        "fxI": -1
+      },
+      {
+        "a": "D",
+        "b": "E",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": true,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0
+      },
+      {
+        "a": "F",
+        "b": "D",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": true,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0,
+        "springI": 3
+      },
+      {
+        "a": "G",
+        "b": "E",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0
+      },
+      {
+        "a": "B",
+        "b": "G",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": true,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": -1,
+        "eps": 0,
+        "kappa": 0,
+        "slideI": "incl",
+        "slideIdx": 1,
+        "slideIdy": 1
+      },
+      {
+        "a": "A",
+        "b": "D",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": true,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0
+      },
+      {
+        "a": "C",
+        "b": "F",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": true,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0
+      }
+    ]
+  }
+}

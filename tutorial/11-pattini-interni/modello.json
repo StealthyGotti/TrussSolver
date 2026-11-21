@@ -1,0 +1,252 @@
+{
+  "version": 2,
+  "model": {
+    "title": "Tema 11 · Pattini interni e carico su un lato",
+    "ref": {
+      "b": 420,
+      "F": 780
+    },
+    "section": {
+      "from": "C",
+      "to": "H",
+      "at": "H",
+      "cut": 9,
+      "profile": [
+        [
+          0,
+          18
+        ],
+        [
+          5,
+          18
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          48,
+          6
+        ],
+        [
+          48,
+          42
+        ],
+        [
+          53,
+          42
+        ]
+      ]
+    },
+    "grid": 0.5,
+    "axial": false,
+    "release": "A/D/mi",
+    "nodes": [
+      {
+        "id": "A",
+        "x": 0,
+        "y": 2,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "B",
+        "x": 2,
+        "y": 2,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "C",
+        "x": 3,
+        "y": 2,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "D",
+        "x": 0,
+        "y": 1,
+        "support": "rollerX",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "E",
+        "x": 2,
+        "y": 1,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "F",
+        "x": 1,
+        "y": 0,
+        "support": "pin",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "G",
+        "x": 2,
+        "y": 0,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      },
+      {
+        "id": "H",
+        "x": 3,
+        "y": 0,
+        "support": "free",
+        "fx": 0,
+        "fy": 0,
+        "m": 0
+      }
+    ],
+    "members": [
+      {
+        "a": "A",
+        "b": "B",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": true,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": -1,
+        "eps": 0,
+        "kappa": 0,
+        "springI": 4
+      },
+      {
+        "a": "B",
+        "b": "C",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": true,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0,
+        "fyJ": -1
+      },
+      {
+        "a": "D",
+        "b": "E",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0,
+        "mI": -1
+      },
+      {
+        "a": "F",
+        "b": "G",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0
+      },
+      {
+        "a": "G",
+        "b": "H",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0
+      },
+      {
+        "a": "A",
+        "b": "D",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0
+      },
+      {
+        "a": "B",
+        "b": "E",
+        "type": "bar",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": -1,
+        "kappa": 0
+      },
+      {
+        "a": "C",
+        "b": "H",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 0,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0,
+        "slideI": "axis"
+      },
+      {
+        "a": "E",
+        "b": "G",
+        "type": "beam",
+        "fiberSide": "right",
+        "hi": false,
+        "hj": false,
+        "ea": 1000,
+        "ei": 1,
+        "qx": 1,
+        "qy": 0,
+        "eps": 0,
+        "kappa": 0,
+        "slideJ": "normal"
+      }
+    ]
+  }
+}
