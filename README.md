@@ -17,6 +17,10 @@ All’avvio trovi il **telaio con biella AB**, unico esempio nel menu **Modelli*
 
 La [raccolta dei tutorial](tutorial/README.md) include i riferimenti per leggere ordinate, segni e unità.
 
+## Frazioni e decimali
+
+La tavola, le proprietà e i risultati mostrano frazioni per impostazione predefinita. Seleziona **Mostra decimali**, accanto a **Modelli**, per cambiare formato anche dopo il calcolo. Per esempio, nel primo tema l’iperstatica passa da −13/16 Fb a −0,8125 Fb. Le frazioni dei risultati sono ricostruite dal calcolo numerico e possono essere approssimate. Nei campi delle proprietà puoi inserire sia una frazione come `3/2` sia un decimale come `1,5`.
+
 ## Disegno e salvataggio
 
 Seleziona **Mano** e trascina la tavola con il mouse o con un dito. Le lenti **+** e **−** regolano lo zoom dal centro. Con la rotellina puoi ingrandire o ridurre attorno al puntatore anche mentre disegni. Con **Mano** attiva puoi anche avvicinare o allontanare due dita su uno schermo touch. **Inquadra tutta la struttura** ripristina la vista d’insieme.

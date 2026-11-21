@@ -6,6 +6,7 @@ const Models = require('../src/examples');
 const Mechanics = require('../src/solver');
 
 const context = vm.createContext({Models, Mechanics});
+vm.runInContext(fs.readFileSync(require.resolve('../src/numbers'), 'utf8'), context);
 const draft = vm.runInContext(fs.readFileSync(require.resolve('../src/drawing'), 'utf8') + '\nDraft', context);
 
 function draw(model, result, state, component, extra = {}) {

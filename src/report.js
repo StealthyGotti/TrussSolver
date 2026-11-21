@@ -1,10 +1,10 @@
 const Report = (() => {
-  const {esc, fmt} = Draft;
+  const {esc} = Draft;
   const table = (heads, rows) => `<div class="scroll"><table><thead><tr>${
       heads.map(x => '<th>' + esc(x) + '</th>').join('')}</tr></thead><tbody>${
       rows.map(r => '<tr>' + r.map(x => '<td>' + esc(x) + '</td>').join('') + '</tr>')
           .join('')}</tbody></table></div>`;
-  function poly(p) {
+  function poly(p, fmt) {
     const terms = p.map((v, i) => ({v, i})).filter(t => Math.abs(t.v) > 1e-12);
     return terms
                .map(
@@ -16,7 +16,7 @@ const Report = (() => {
                .join(' ') ||
         '0';
   }
-  function workedIntegral(model, r, ui) {
+  function workedIntegral(model, r, ui, fmt) {
     const index = Math.min(ui.workElement ?? 0, r.elements.length - 1);
     const i = Math.min(ui.workService ?? 0, r.service.length - 1);
     const j = Math.min(ui.workPartner ?? -1, r.service.length - 1);
@@ -29,7 +29,7 @@ const Report = (() => {
       left.forEach((v, k) => right.forEach((w, h) => {
         p[k + h] += v * w * factor;
       }));
-      products.push('(' + poly(left) + ') · (' + poly(right) + ')' + denominator);
+      products.push('(' + poly(left, fmt) + ') · (' + poly(right, fmt) + ')' + denominator);
     }
     product(a.M, b.M, 1 / e.ei, ' / ' + fmt(e.ei));
     if (model.axial)
@@ -54,8 +54,8 @@ const Report = (() => {
         picker('work-element', 'Asta', r.elements.map((e, k) => [k, e.name]), index) +
         picker('work-service', 'Sistema virtuale', services, i) +
         picker('work-partner', 'Secondo sistema', [[-1, 'Principale'], ...services], j) +
-        '</div><div class="formula">g(s) = ' + (products.join(' + ') || '0') + '<br>g(s) = ' + poly(p) +
-        '<br>∫₀ᴸ g(s) ds = [' + poly(primitive) + '] da 0 a ' + fmt(e.L) + ' = ' +
+        '</div><div class="formula">g(s) = ' + (products.join(' + ') || '0') + '<br>g(s) = ' + poly(p, fmt) +
+        '<br>∫₀ᴸ g(s) ds = [' + poly(primitive, fmt) + '] da 0 a ' + fmt(e.L) + ' = ' +
         fmt(term.total - term.spring) +
         (term.spring ? '<br>Contributo con la molla = ' + fmt(term.total - term.spring) + ' + (' +
                  fmt(term.spring) + ') = ' + fmt(term.total) :
@@ -80,6 +80,7 @@ const Report = (() => {
     return stage === 'final' ? r.final : stage === 'primary' ? r.primary : r.service[Number(stage)];
   }
   function render(host, model, r, ui, onChange) {
+    const fmt = ui.decimals ? NumericDisplay.decimal : NumericDisplay.fraction;
     const tabs = ['Diagrammi', 'Equilibrio', 'Lavori virtuali'];
     const exam = model.exercise === 'tema-1';
     const sectionIndex = exam ? r.elements.findIndex(e=>e.a==='H' && e.b==='F' && e.type==='beam') : -1;
@@ -90,7 +91,7 @@ const Report = (() => {
     const card = unknowns.length ? unknowns.map((d,i)=>{
       const moment=d.unit==='kN·m', base=moment?Models.reference.W:Models.reference.F;
       const name=exam && d.id==='E/A/mj'?'W_AE':d.label;
-      const relativeValue=exam ? '<p>'+Draft.fraction(r.X[i]/base)+(moment?' Fb':' F')+'</p>' : '';
+      const relativeValue=exam ? '<p>'+fmt(r.X[i]/base)+(moment?' Fb':' F')+'</p>' : '';
       return `<div class="result-card"><div class="cap">Incognita ${xi(i)} · ${esc(name)}</div>
         <div class="big">${fmt(r.X[i])} <small>${d.unit}</small></div>${relativeValue}</div>`;
     }).join('') : '<div class="result-card"><div class="cap">Struttura isostatica</div><strong>Soluzione dall’equilibrio</strong></div>';
@@ -119,10 +120,10 @@ const Report = (() => {
               []);
       const sections = r.elements.map((e, i) => {
         const field = c => Draft.diagramField(model.members[i],state.fields[i],c);
-        if (comp==='all') return [e.name,fmt(e.L),...components.map(c=>poly(field(c)))];
+        if (comp==='all') return [e.name,fmt(e.L),...components.map(c=>poly(field(c), fmt))];
         const p = field(comp), ord = Draft.ordinates(p, e.L);
         return [
-          e.name, fmt(e.L), poly(p), fmt(ord[0][1]), fmt(ord[1][1]),
+          e.name, fmt(e.L), poly(p, fmt), fmt(ord[0][1]), fmt(ord[1][1]),
           ord.length > 2 ? fmt(ord[2][1]) + ' @ ' + fmt(ord[2][0]) + ' m' : '—'
         ];
       });
@@ -219,11 +220,11 @@ const Report = (() => {
           model.axial ?
               'Deformabilità assiale e flessionale attive.' :
               'Deformabilità flessionale attiva. I termini elastici in 1/EA valgono zero.'} Gli integrali usano i momenti locali delle aste, positivi con fibre tese a destra nel verso i → j.</p>${
-          terms}${workedIntegral(model, r, ui)}
+          terms}${workedIntegral(model, r, ui, fmt)}
       <h3>3. Soluzione e sovrapposizione</h3><div class="formula">${
           r.flexibility
               .map(
-                  (row, i) => poly([r.delta[i]]) +
+                  (row, i) => poly([r.delta[i]], fmt) +
                       row.map((v, j) => (v < 0 ? ' − ' : ' + ') + fmt(Math.abs(v)) + ' ' + xi(j)).join('') +
                       ' = 0')
               .join('<br>')}<br>${
@@ -251,7 +252,7 @@ const Report = (() => {
       const plot=host.querySelector('#result-plot-'+component);
       const ordinateUnit=relative ? (component==='M' ? Models.reference.W : Models.reference.F) : 0;
       Draft.draw(plot,model,Draft.viewport(model.nodes,Math.max(220,plot.clientWidth),plot.clientHeight||300),
-        {result:r,state,component,showLoads:ui.showLoads,ordinateUnit,reduced:ui.stage!=='final'});
+        {result:r,state,component,showLoads:ui.showLoads,decimals:ui.decimals,ordinateUnit,reduced:ui.stage!=='final'});
     }
   }
   return {render};

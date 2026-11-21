@@ -2,16 +2,6 @@ const Draft = (() => {
   const ink = '#294448', green = '#007a68', rust = '#b85b2a', faint = '#8caaa0';
   const esc = text => String(text).replace(
       /[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;'}[c]));
-  const fmt = x => Math.abs(x) < 1e-12 ?
-      '0' :
-      Number(x.toPrecision(5)).toLocaleString('it-IT', {maximumSignificantDigits: 5, useGrouping: false});
-  function fraction(value) {
-    for (let den=1; den<=96; den++) {
-      const num=Math.round(value*den);
-      if (Math.abs(num/den-value)<1e-8) return den===1 ? String(num) : num+'/'+den;
-    }
-    return fmt(value);
-  }
   const line = (x, y, u, v, stroke = ink, w = 1.5, extra = '') =>
       `<line x1="${x}" y1="${y}" x2="${u}" y2="${v}" stroke="${stroke}" stroke-width="${w}" ${extra}/>`;
   const path = (d, stroke = ink, fill = 'none', w = 1.5, extra = '') => `<path d="${d}" stroke="${
@@ -76,7 +66,7 @@ const Draft = (() => {
         label(x - c * 48, y - s * 48 + (Math.abs(c) > .7 ? -6 : 2), caption, rust, 11,
               Math.abs(c) > .7 ? (c > 0 ? 'start' : 'end') : 'middle');
   }
-  function couple(x, y, value, caption = fmt(value) + ' kN·m') {
+  function couple(x, y, value, caption) {
     const sign = Math.sign(value);
     return path(
                `M ${x - 13} ${y + 5 * sign} A 14 14 0 1 ${sign > 0 ? 0 : 1} ${x + 12} ${y - 7 * sign}`,
@@ -104,7 +94,7 @@ const Draft = (() => {
     return line(a - 28 * dx, b - 28 * dy, h - 28 * dx, k - 28 * dy, rust, 1) +
         points.map(([px, py]) => arrow(px - 28 * dx, py - 28 * dy, px - 5 * dx, py - 5 * dy, rust, 1))
             .join('') +
-        label((a + h) / 2 - 36 * dx, (b + k) / 2 - 36 * dy - 2, caption || fmt(q) + ' kN/m', rust, 11);
+        label((a + h) / 2 - 36 * dx, (b + k) / 2 - 36 * dy - 2, caption, rust, 11);
   }
   function ordinates(poly, L) {
     const values = [0, L];
@@ -163,6 +153,7 @@ const Draft = (() => {
 
   function draw(svg, model, view, options = {}) {
     const {width: w, height: h} = view, {result, state, component, reduced, selected, first} = options;
+    const fmt = options.decimals ? NumericDisplay.decimal : NumericDisplay.fraction;
     const editable = !state, showLoads = editable || options.showLoads,
           nodes = new Map(model.nodes.map(n => [n.id, n]));
     const at = id => pos(nodes.get(id), view);
@@ -171,7 +162,7 @@ const Draft = (() => {
     function caption(value, base, symbol, unit) {
       if (!editable || !exam) return fmt(value)+' '+unit;
       const ratio = value/base;
-      return (ratio===1?'':fraction(ratio)) + symbol;
+      return (ratio===1?'':fmt(ratio)) + symbol;
     }
     const centralHinges = new Set(model.nodes.filter(n => {
       if(n.m || n.support!=='free') return false;
@@ -238,7 +229,7 @@ const Draft = (() => {
         if (peak && Math.abs(peak[1])>Math.max(Math.abs(start),Math.abs(end))+max*1e-10)
           marks.push([peak[0]/len,peak[1],true]);
         for (const [t,value,isPeak] of marks) {
-          const text=options.ordinateUnit ? fraction(value/options.ordinateUnit) : fmt(value);
+          const text=fmt(value / (options.ordinateUnit || 1));
           const inset=Math.min(.35,(7+text.length*3.1)/L);
           const position=Math.max(inset,Math.min(1-inset,t));
           const sign=(value < -max*1e-10 ? 1 : -1)*(isPeak ? -1 : 1);
@@ -328,5 +319,5 @@ const Draft = (() => {
     }
     svg.innerHTML = out;
   }
-  return {draw, viewport, esc, fmt, fraction, ordinates, diagramField};
+  return {draw, viewport, esc, fraction: NumericDisplay.fraction, ordinates, diagramField};
 })();

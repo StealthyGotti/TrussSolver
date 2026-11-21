@@ -100,6 +100,9 @@ svg.icon{
   align-items:center;
   gap:7px
 }
+.project-actions{
+  flex-wrap:wrap
+}
 .picker select{
   background:transparent;
   border:0;

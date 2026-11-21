@@ -1,5 +1,5 @@
 (() => {
-  const $ = s => document.querySelector(s), {esc, fmt} = Draft;
+  const $ = s => document.querySelector(s), {esc} = Draft;
   const paths = {
     folder: 'M3 7h6l2 2h10l-2 10H3z M3 7V5h6l2 2h8v2',
     save: 'M4 3h13l3 3v15H4z M8 3v6h8V3 M8 21v-8h8v8',
@@ -25,7 +25,9 @@
   document.querySelectorAll('[data-icon]').forEach(i => i.outerHTML = icon(i.dataset.icon));
   const clone = o => JSON.parse(JSON.stringify(o));
   let model = clone(Models.examples[0]), result = null, problem = '', selection = '', tool = 'select',
-      first = '', view, step = Models.reference.b / 2, history = [], ui = {tab: 0, stage: 'final', comp: 'all'};
+      first = '', view, step = Models.reference.b / 2, history = [], ui = {tab: 0, stage: 'final', comp: 'all', decimals: false};
+  const fmt = value => ui.decimals ? NumericDisplay.decimal(value) : NumericDisplay.fraction(value);
+  let pointer = null;
   let fitNeeded = true;
   const supports = {
     free: 'Libero',
@@ -87,9 +89,9 @@
                 esc(t)}</option>`)
         .join('');
   }
-  function field(key, title, value, extra = '') {
-    return `<label>${title}<input type="number" step="any" data-prop="${key}" value="${esc(value)}" ${
-        extra} required></label>`;
+  function field(key, title, value) {
+    const shown = ui.decimals ? String(value).replace('.', ',') : NumericDisplay.inputFraction(value);
+    return `<label>${title}<input type="text" data-numeric data-prop="${key}" value="${esc(shown)}" required></label>`;
   }
   function check(key, title, value) {
     return `<label class="check"><input type="checkbox" data-prop="${key}" ${value ? 'checked' : ''}>${
@@ -141,19 +143,19 @@
       if (o.type === 'beam' && !(o.hi && o.hj))
         html +=
             '<details><summary>Molle rotazionali agli estremi</summary><p class="help">Rigidezza tra asta e nodo in kN·m/rad. Il valore 0 mantiene il collegamento rigido.</p><div class="props">' +
-            (o.hi ? '' : field('springI', 'k in ' + esc(o.a), o.springI || 0, 'min="0"')) +
-            (o.hj ? '' : field('springJ', 'k in ' + esc(o.b), o.springJ || 0, 'min="0"')) +
+            (o.hi ? '' : field('springI', 'k in ' + esc(o.a), o.springI || 0)) +
+            (o.hj ? '' : field('springJ', 'k in ' + esc(o.b), o.springJ || 0)) +
             '</div></details>';
       html += '<span class="cap">Rigidezza</span><div class="props">' +
-          (o.type === 'beam' ? field('ei', 'EJ [kN·m²]', o.ei, 'min="0"') : '') +
-          field('ea', 'EA [kN]', o.ea, 'min="0"') +
+          (o.type === 'beam' ? field('ei', 'EJ [kN·m²]', o.ei) : '') +
+          field('ea', 'EA [kN]', o.ea) +
           '</div><details><summary>Deformazioni impresse</summary><div class="props">' +
           field('eps', 'ε₀ [m/m]', o.eps) + (o.type === 'beam' ? field('kappa', 'κ₀ [1/m]', o.kappa) : '') +
           '</div></details>';
     } else {
       const restraint = model.nodes.filter(n => n.support !== 'free').length;
       if (model.exercise === 'tema-1') {
-        html += '<span class="cap">Riferimenti della traccia</span><p class="subtext">b = 480 mm · F = 1,5 kN<br>q = F/b · W = Fb<br>EJ di riferimento = 1000 kN·m²</p>';
+        html += `<span class="cap">Riferimenti della traccia</span><p class="subtext">b = ${fmt(Models.reference.b * 1000)} mm · F = ${fmt(Models.reference.F)} kN<br>q = F/b · W = Fb<br>EJ di riferimento = ${fmt(Models.reference.EJ)} kN·m²</p>`;
       }
       html +=
           `<div class="setting"><span>Schema</span><strong>Telaio piano</strong></div><div class="setting"><span>Vincoli esterni</span><strong>${
@@ -172,16 +174,16 @@
       render();
     };
     document.querySelectorAll('[data-prop]').forEach(input => input.onchange = () => {
-      const key = input.dataset.prop, num = input.type === 'number';
-      if (num &&
-          (!Number.isFinite(input.valueAsNumber) ||
-           (['ei', 'ea'].includes(key) && input.valueAsNumber <= 0))) {
-        input.setCustomValidity('Inserisci un valore numerico valido. Le rigidezze devono essere positive.');
+      const key = input.dataset.prop, numeric = input.hasAttribute('data-numeric');
+      const value = numeric ? NumericDisplay.parse(input.value) : input.type === 'checkbox' ? input.checked : input.value;
+      if (numeric && (!Number.isFinite(value) || (['ei', 'ea'].includes(key) && value <= 0) ||
+          (['springI', 'springJ'].includes(key) && value < 0))) {
+        input.setCustomValidity('Inserisci un decimale o una frazione valida. EA ed EJ devono essere positivi e le molle hanno rigidezza positiva o nulla.');
         input.reportValidity();
         input.oninput = () => input.setCustomValidity('');
         return;
       }
-      const value = num ? input.valueAsNumber : input.type === 'checkbox' ? input.checked : input.value;
+      if (value === o[key]) return;
       if (key === 'fiberSide') {
         remember();
         o.fiberSide = value;
@@ -226,7 +228,7 @@
       });
   }
   function paintCanvas() {
-    Draft.draw($('#canvas'), model, view, {selected: selection, first, step});
+    Draft.draw($('#canvas'), model, view, {selected: selection, first, step, decimals: ui.decimals});
     $('#zoom-level').textContent = Math.round(100 * view.scale / view.fitScale) + '%';
     $('#zoom-out').disabled = view.scale <= view.fitScale / 32;
     $('#zoom-in').disabled = view.scale >= view.fitScale * 32;
@@ -307,7 +309,8 @@
   }
   const navigation = BoardNavigation.attach($('#canvas'), () => view, () => tool === 'pan', paintCanvas);
   $('#canvas').onpointermove = e => {
-    const [x, y] = world(e);
+    pointer = world(e);
+    const [x, y] = pointer;
     $('#pointer-pos').textContent = 'x ' + fmt(x) + ' · y ' + fmt(y) + ' m';
   };
   $('#canvas').onclick = e => {
@@ -355,6 +358,14 @@
       first = '';
       selection = 'e' + (model.members.length - 1);
     });
+  };
+  $('#show-decimals').checked = ui.decimals;
+  $('#show-decimals').onchange = e => {
+    ui.decimals = e.target.checked;
+    const open = Array.from(document.querySelectorAll('details'), d => d.open);
+    render();
+    document.querySelectorAll('details').forEach((d, i) => { d.open = open[i]; });
+    if (pointer) $('#pointer-pos').textContent = 'x ' + fmt(pointer[0]) + ' · y ' + fmt(pointer[1]) + ' m';
   };
   $('#zoom-in').onclick = () => navigation.zoom(1.25);
   $('#zoom-out').onclick = () => navigation.zoom(1 / 1.25);
