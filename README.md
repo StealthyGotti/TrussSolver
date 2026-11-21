@@ -67,7 +67,7 @@ Dopo **Calcola** la sezione **Analisi strutturale** mostra cinque schede, impagi
 
 | Scheda | Contenuto |
 | --- | --- |
-| **Azioni interne** | Diagrammi N, T e M quotati in multipli di F e Fb, per la struttura finale, la principale e ogni servizio |
+| **Azioni interne** | Diagrammi N, T e M quotati in multipli di F e Fb, per la struttura finale, la principale e ogni servizio. Sotto, le equazioni N(x), T(x) e M(x) dell’asta scelta su principale, servizio e finale |
 | **Reazioni** | Aste isolate con le forze e le coppie trasmesse dai nodi, e le reazioni dei vincoli |
 | **Equilibrio** | Sistema delle equazioni di equilibrio e soluzioni statiche |
 | **Lavori virtuali** | Schema di calcolo iperstatico, M₀ e Mₓ, quadro dei contributi del PLV, sviluppo degli integrali e valore dell’incognita |

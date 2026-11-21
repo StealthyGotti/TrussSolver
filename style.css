@@ -670,3 +670,9 @@ table.quadro tr.extra td { border-bottom: 1px solid #cfd8d4; }
 table.quadro tr.extra td:nth-child(2) { text-align: left; font-family: inherit; }
 .formula.developments { line-height: 2.1; white-space: nowrap; }
 .formula sub, .formula sup, table.quadro sub { font-size: 75%; }
+
+.equations-bar { justify-content: flex-start; margin-bottom: 8px; }
+table.equations { width: auto; min-width: 0; margin-bottom: 4px; }
+table.equations th, table.equations td { padding: 7px 16px 7px 9px; font: 13px var(--mono); }
+table.equations td:first-child { font: 600 13px inherit; font-family: inherit; }
+table.equations td.note { color: var(--muted); font: 12px inherit; font-family: inherit; white-space: normal; }

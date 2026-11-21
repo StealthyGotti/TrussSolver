@@ -109,3 +109,26 @@ test('Più incognite: un quadro per ciascuna, con i termini misti', () => {
   const value = label => r.final.vector[r.descriptors.findIndex(d => d.label === label)];
   assert.ok(Math.abs(value('V_A') + value('V_B') + value('V_C') - 4) < 1e-9);
 });
+
+test('Equazioni di un’asta: N, T e M su principale, servizio e finale', () => {
+  // Same stand-in host as above, with the member chosen in the picker.
+  const equations = (number, key) => {
+    const model = exam(number), r = Mechanics.solve(model);
+    NumericDisplay.learn(model);
+    const plot = id => ({id, clientWidth: 420, clientHeight: 320, setAttribute() {}});
+    const host = {innerHTML: '', querySelectorAll: () => [], querySelector: q => /plot/.test(q) ? plot(q.slice(1)) : null};
+    Report.render(host, model, r, {tab: 'diagrams', stage: 'final', comp: 'all', member: r.elements.findIndex(e => e.key === key)}, () => {});
+    const html = host.innerHTML, start = html.indexOf('<table class="equations">');
+    return html.slice(start, html.indexOf('</table>', start)).replace(/<\/tr>/g, '\n').replace(/<\/t[dh]>/g, '|').replace(/<[^>]+>/g, '');
+  };
+  const ca = equations(1, 'C/A');
+  assert.equal(row(ca, 'Principale'), 'Principale|-11/4F|-11/8F|11/4Fb-11/8Fx|carichi assegnati, X = 0|');
+  assert.equal(row(ca, 'Servizio'), 'Servizio|0|-1/2X/b|-1/2Xx/b|effetto di X = WAE|');
+  assert.equal(row(ca, 'Finale'), 'Finale|-11/4F|-31/32F|11/4Fb-31/32Fx|X = -13/16 Fb|');
+  // A loaded member, a bar and an unknown force.
+  assert.equal(row(equations(1, 'D/G'), 'Principale'), 'Principale|-11/8F|11/4F-7qx|11/4Fx-7/2qx²|carichi assegnati, X = 0|');
+  assert.equal(row(equations(1, 'A/B'), 'Servizio'), 'Servizio|X/b|0|0|effetto di X = WAE|');
+  assert.equal(row(equations(1, 'A/B'), 'Finale'), 'Finale|57/16F|0|0|X = -13/16 Fb|');
+  assert.equal(row(equations(13, 'G/H'), 'Servizio'), 'Servizio|0|X|Xx|effetto di X = VG|');
+  assert.equal(row(equations(13, 'F/E'), 'Finale'), 'Finale|-√5/4F|√5/2F|√5/2Fx|X = -59/8 F|');
+});

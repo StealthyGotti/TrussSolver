@@ -273,6 +273,7 @@
     $('#inspector').innerHTML = html;
     $('#object').onchange = e => {
       selection = e.target.value;
+      if (selection[0] === 'e') ui.member = +selection.slice(1);
       render();
     };
     document.querySelectorAll('[data-prop]').forEach(input => input.onchange = () => {
@@ -466,6 +467,8 @@
           k = e.target.closest('[data-edge]')?.dataset.edge;
     if (tool === 'select') {
       selection = n !== undefined ? 'n' + n : k !== undefined ? 'e' + k : '';
+      // The member picked on the board is also the one whose equations are shown in the results.
+      if (n === undefined && k !== undefined) ui.member = +k;
       render();
       return;
     }

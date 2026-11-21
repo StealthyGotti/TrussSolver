@@ -20,14 +20,15 @@ const Report = (() => {
 
   // c F^f b^(m−k) x^k written as on the sheets: 11/4Fb, 1/4x²/b², 16bx, 11/16Fx²/b.
   // The sheets write the loaded moments with q = F/b: 7/2qx².
+  // f is 0 for a pure number, 1 for the load F, or the symbol of an unknown such as X.
   function monomial(c, k, f, m, fmt, first, distributed = false) {
-    let b = m - k, load = f ? 'F' : '';
-    if (distributed && f && b < 0) {
+    let b = m - k, load = typeof f === 'string' ? f : f ? 'F' : '';
+    if (distributed && f === 1 && b < 0) {
       load = 'q';
       b += 1;
     }
     const tail = load + (b > 0 ? power('b', b) : '') + power('x', k) + (b < 0 ? '/' + power('b', -b) : '');
-    const size = Math.abs(c), number = tail && Math.abs(size - 1) < 1e-12 ? '' : wrap(fmt(size));
+    const size = Math.abs(c), number = tail && !tail.startsWith('/') && Math.abs(size - 1) < 1e-12 ? '' : wrap(fmt(size));
     return (c < 0 ? '-' : first ? '' : '+') + number + tail;
   }
   function polynomial(p, f, m, fmt, suffix = '', distributed = false) {
@@ -124,6 +125,34 @@ const Report = (() => {
         };
       });
     });
+  }
+
+  // N, T and M of one member as functions of x, on the primary structure, on every service
+  // structure (per unit of its unknown, written with the symbol X) and on the final one.
+  function memberEquations(model, r, index, fmt, xi) {
+    const k = Math.min(Math.max(index || 0, 0), r.elements.length - 1), e = r.elements[k];
+    const unknowns = r.free.map(j => r.descriptors[j]), many = unknowns.length > 1;
+    const field = (state, c) => Draft.diagramField(model.members[k], state.fields[k], c);
+    // Powers of b of N, T and M: forces for loads, and X/b, X/b, X for an unknown couple.
+    const row = (title, state, f, shift, note) => '<tr><td>' + title + '</td>' + ['N', 'T', 'M'].map((c, n) =>
+        '<td>' + polynomial(field(state, c), f, shift + (n === 2 ? 1 : 0), fmt, '', f === 1) + '</td>').join('') +
+        '<td class="note">' + note + '</td></tr>';
+    const X = i => many ? xi(i) : 'X', value = i => X(i) + ' = ' + fmt(r.X[i]) + ' ' + unknowns[i].unit;
+    const picker = '<select id="member-equations" aria-label="Asta di cui mostrare le equazioni">' +
+        r.elements.map((m, n) => `<option value="${n}" ${n === k ? 'selected' : ''}>${
+            esc((m.type === 'bar' ? 'Biella ' : 'Trave ') + m.a + m.b)}</option>`).join('') + '</select>';
+    const sub = index => '<sub>' + index + '</sub>';
+    return `<h3>Equazioni di un’asta</h3>
+      <div class="result-bar equations-bar">${picker}<span class="subtext">${esc(e.a)} → ${esc(e.b)} · L = ${lengthOf(e.L, fmt)} · x parte da ${
+        esc(e.a)}${e.type === 'bar' ? ' · la biella ha solo sforzo normale' : ''}</span></div>
+      <div class="scroll"><table class="equations"><thead><tr><th>Struttura</th><th>N(x)</th><th>T(x)</th><th>M(x)</th><th></th></tr></thead><tbody>${
+        row('Principale', r.primary, 1, 0, unknowns.length ? 'carichi assegnati, ' + unknowns.map((_, i) => X(i)).join(' = ') + ' = 0' : 'carichi assegnati') +
+        unknowns.map((d, i) => row('Servizio' + (many ? ' ' + (i + 1) : ''), r.service[i], X(i), order(d) - 1,
+            'effetto di ' + name(X(i) + ' = ' + d.label))).join('') +
+        (unknowns.length ? row('Finale', r.final, 1, 0, unknowns.map((_, i) => value(i)).join(' · ')) : '')
+      }</tbody></table></div>
+      <p class="help">${unknowns.length ? 'La riga finale è la somma della principale e dei servizi con il valore dell’incognita: S = S' + sub('o') + ' + ' +
+        unknowns.map((_, i) => X(i) + ' S' + sub(many ? i + 1 : 'x')).join(' + ') + '. ' : ''}N e T sono in F e M in Fb, con q = F/b. Il segno di M segue il tratteggio dell’asta.</p>`;
   }
 
   // Quadro contributi PLV of one unknown, with the rows of every member read from both ends.
@@ -284,7 +313,8 @@ const Report = (() => {
         }<div class="diagram-notes">${card}
         <p class="subtext">${name(stageInfo)}</p><label class="check"><input id="show-loads" type="checkbox" ${ui.showLoads?'checked':''}> Mostra i carichi sullo schema</label>
         <p class="help">Diagrammi in multipli di F per normale e taglio e di Fb per il momento. Le ordinate positive sono disegnate sul lato tratteggiato. Nel diagramma M la curva si trova sul lato delle fibre tese.</p></div></div>
-        <details ${comp==='all'?'':'open'}><summary>Equazioni e valori per asta</summary>${table(heads,sections)}
+        ${memberEquations(model, r, ui.member, fmt, xi)}
+        <details ${comp==='all'?'':'open'}><summary>Equazioni e valori di tutte le aste · ${esc(stageNames.find(([v]) => v === ui.stage)[1])}</summary>${table(heads,sections)}
         <p class="subtext">Ascissa s in unità di b dal primo al secondo nodo dell’asta. I segni di M(s) seguono il tratteggio scelto per ciascuna asta.</p></details>`;
     } else if (ui.tab === 'reactions') {
       const reactions = r.descriptors.flatMap(
@@ -355,6 +385,9 @@ const Report = (() => {
     const select = host.querySelector('#report-stage');
     if (select)
       select.onchange = () => onChange({stage: select.value});
+    const member = host.querySelector('#member-equations');
+    if (member)
+      member.onchange = () => onChange({member: Number(member.value)});
     const overlay = host.querySelector('#show-loads');
     if (overlay)
       overlay.onchange = () => onChange({showLoads: overlay.checked});
