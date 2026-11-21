@@ -49,6 +49,7 @@
   };
   const connectionOf = (e, end) => Object.keys(connections).find(
       k => connections[k][0] === Boolean(e['h' + end.toLowerCase()]) && connections[k][1] === (e['slide' + end] || ''));
+  const endLoadKeys = ['fxI', 'fyI', 'mI', 'fxJ', 'fyJ', 'mJ'];
   const names = {select: 'Seleziona', node: 'Nodo', edge: 'Asta', pan: 'Mano'};
   const tips = {
     select: 'Seleziona un nodo o un’asta per modificarne le proprietà.',
@@ -161,6 +162,17 @@
         html += '<span class="cap">Carico uniforme · assi globali</span><div class="props">' +
             field('qx', 'p lungo x [F/b]', o.qx) + field('qy', 'q lungo y [F/b]', o.qy) + '</div>';
       }
+      if (o.type === 'beam') {
+        html += '<details' + (endLoadKeys.some(k => o[k]) ? ' open' : '') +
+            '><summary>Carichi su un solo lato del nodo</summary><p class="help">Forze e coppie applicate all’estremo dell’asta, dalla parte dell’asta rispetto a cerniere, pattini e carrelli.</p>';
+        for (const [end, from, to] of [['I', o.a, o.b], ['J', o.b, o.a]]) {
+          const tag = '_' + esc(from) + esc(to);
+          html += '<div class="props">' + field('fx' + end, 'H' + tag + ' [F]', o['fx' + end] || 0) +
+              field('fy' + end, 'V' + tag + ' [F]', o['fy' + end] || 0) +
+              field('m' + end, 'W' + tag + ' ↺ [Fb]', o['m' + end] || 0) + '</div>';
+        }
+        html += '</details>';
+      }
       if (o.type === 'beam' && !(o.hi && o.hj))
         html +=
             '<details><summary>Molle rotazionali agli estremi</summary><p class="help">Rigidezza tra asta e nodo in EJ/b. Il valore 0 mantiene il collegamento rigido.</p><div class="props">' +
@@ -229,7 +241,8 @@
         if (key === 'hj' && value)
           o.springJ = 0;
         if (key === 'type' && value === 'bar')
-          Object.assign(o, {qx: 0, qy: 0, kappa: 0, hi: false, hj: false, springI: 0, springJ: 0, slideI: '', slideJ: ''});
+          Object.assign(o, {qx: 0, qy: 0, kappa: 0, hi: false, hj: false, springI: 0, springJ: 0, slideI: '', slideJ: '',
+                            ...Object.fromEntries(endLoadKeys.map(k => [k, 0]))});
         if (!releaseList().some(([v]) => v === model.release))
           model.release = '';
       }, key === 'x' || key === 'y');
@@ -462,6 +475,7 @@
       for (const a of m.members) {
         if (a.fiberSide === undefined) a.fiberSide = 'right';
         if (!['left','right'].includes(a.fiberSide)) throw Error();
+        if (!endLoadKeys.every(k => a[k] === undefined || Number.isFinite(a[k]))) throw Error();
         for (const end of ['I', 'J']) {
           const mode = a['slide' + end];
           if (![undefined, '', 'axis', 'normal', 'incl'].includes(mode)) throw Error();

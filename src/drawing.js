@@ -264,6 +264,13 @@ const Draft = (() => {
       members += line(x, y, u, v, editable ? ink : '#191c19', editable ? (e.type==='bar'?2:3.3) : 1.8);
       if (showLoads && realLoads)
         symbols += distributed(x, y, u, v, e.qx, e.qy, caption(Math.hypot(e.qx,e.qy),'q'));
+      if (showLoads && realLoads) [[x, y, 1, 'I'], [u, v, -1, 'J']].forEach(([px, py, sign, end]) => {
+        // Loads on the member side of a connection are drawn a little inside the member.
+        const ax = px + c * 19 * sign, ay = py + s * 19 * sign;
+        const fx = e['fx' + end] || 0, fy = e['fy' + end] || 0, m = e['m' + end] || 0;
+        symbols += pointLoad(ax, ay, fx, 0, caption(fx, 'F')) + pointLoad(ax, ay, 0, fy, caption(fy, 'F'));
+        if (m) symbols += couple(ax, ay, m, caption(m, 'W'));
+      });
       if (showLoads && realLoads && e.type==='bar' && e.eps)
         symbols += path('M -4 -4 h 8 v 8 h -8 Z',green,'none',1,
           `transform="translate(${(x+u)/2} ${(y+v)/2})"`);

@@ -46,6 +46,10 @@ const Mechanics = (() => {
       if (e.type === 'bar' && (e.qx || e.qy || e.kappa))
         fail('La biella ammette carichi solo ai nodi e deformazione iniziale assiale.');
       const c = dx / L, s = dy / L;
+      // Loads applied to the member side of each end connection: [H, V, W] at i and at j.
+      const endLoads = [[e.fxI, e.fyI, e.mI], [e.fxJ, e.fyJ, e.mJ]].map(load => load.map(value => value ?? 0));
+      if (!endLoads.flat().every(finite) || (e.type === 'bar' && endLoads.flat().some(Boolean)))
+        fail('I carichi di estremità si assegnano alle travi con valori numerici.');
       // Unit vector along which an end may slide with respect to its node, or null.
       const sliding = (mode = '', sx, sy) => {
         if (!Object.hasOwn(slideModes, mode) || (mode && e.type === 'bar'))
@@ -58,7 +62,7 @@ const Mechanics = (() => {
         return [sx / norm, sy / norm];
       };
       return {
-        ...e, i, j, L, c, s, name: e.a + '–' + e.b, key: e.a + '/' + e.b,
+        ...e, i, j, L, c, s, name: e.a + '–' + e.b, key: e.a + '/' + e.b, endLoads,
         slides: [sliding(e.slideI, e.slideIdx, e.slideIdy), sliding(e.slideJ, e.slideJdx, e.slideJdy)]
       };
     });
@@ -143,9 +147,10 @@ const Mechanics = (() => {
         // The force passed to the node has no component along the sliding direction.
         // At i it is N t − T(0) n, at j it is −N(L) t + T(L) n.
         const td = c * d[0] + s * d[1], nd = -s * d[0] + c * d[1], sign = end ? -1 : 1;
-        const row = loads.length;
+        // A load on the member side of the connection passes through it as well.
+        const [fx, fy] = e.endLoads[end], row = loads.length;
         rowLabels.push(e.name + ' · scorrimento in ' + (end ? e.b : e.a));
-        loads.push(v * nd - (end ? px * L * td : 0));
+        loads.push(v * nd - (end ? px * L * td : 0) - fx * d[0] - fy * d[1]);
         basic.n.push([row, sign * td]);
         basic.mi.push([row, sign * nd / L]);
         basic.mj.push([row, -sign * nd / L]);
@@ -155,12 +160,22 @@ const Mechanics = (() => {
       const member = (kind, label, terms) =>
           entry({kind, k, id: e.key + '/' + kind, label, unit: kind === 'n' ? 'F' : 'Fb'}, terms);
       member('n', 'N_' + e.a + e.b, basic.n);
+      // At a hinged end the moment balances the couple applied on the member side.
+      e.hinged = {mi: -e.endLoads[0][2], mj: e.endLoads[1][2]};
       if (e.type === 'beam') {
         if (!e.hi)
           member('mi', 'W_' + e.a + e.b, basic.mi.map(([r, value]) => [r, -value]));
         if (!e.hj)
           member('mj', 'W_' + e.b + e.a, basic.mj);
+        for (const kind of ['mi', 'mj'])
+          if (kind === 'mi' ? e.hi : e.hj)
+            for (const [r, value] of basic[kind])
+              loads[r] -= value * e.hinged[kind];
       }
+      // End loads reach the node through the connection.
+      [i, j].forEach((n, end) => e.endLoads[end].forEach((value, d) => {
+        loads[3 * n + d] += value;
+      }));
       // Known end actions for zero basic forces, under a uniform global load.
       loads[3 * i] += s * v;
       loads[3 * i + 1] -= c * v;
@@ -233,7 +248,11 @@ const Mechanics = (() => {
       fail(
           'Corpo libero con carichi non autoequilibrati. Verifica risultante e momento dei carichi o aggiungi i vincoli.');
     function state(vector, real) {
-      const end = elements.map(() => ({n: 0, mi: 0, mj: 0}));
+      const end = elements.map(e => ({
+        n: 0,
+        mi: real && e.type === 'beam' && e.hi ? e.hinged.mi : 0,
+        mj: real && e.type === 'beam' && e.hj ? e.hinged.mj : 0
+      }));
       descriptors.forEach((d, j) => {
         if (d.kind !== 'r')
           end[d.k][d.kind] = d.kind === 'mi' ? -vector[j] : vector[j];

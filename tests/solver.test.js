@@ -190,3 +190,29 @@ test('Carrello interno che scorre lungo l’asta: trasmette solo il taglio', () 
   assert.throws(() => solve(span({hi: true, slideI: 'axis', hj: true, slideJ: 'axis'})), /labile/);
   assert.throws(() => solve({...span({}), members: [beam('A', 'B', {type: 'bar', slideI: 'axis'})]}), /Pattini/);
 });
+
+// Loads applied on one side of a node, on the member side of a connection.
+test('Coppia sul lato dell’asta in una cerniera: il momento di estremità la equilibra', () => {
+  const r = solve(span({hi: true, mI: 5}, 'pin', 'rollerY')), f = r.final.fields[0];
+  near(evaluate(f.M, 0), -5);
+  near(evaluate(f.M, 4), 0);
+  near(value(r, 'r/B/1'), -5 / 4);
+  // Two hinged members meeting at a free node: each one carries its own couple.
+  const m = {nodes: [node('A', 0, 0, 'fixed'), node('B', 2, 0), node('C', 4, 0, 'fixed')],
+    members: [beam('A', 'B', {hj: true, mJ: 3}), beam('B', 'C', {hi: true, mI: -3})], axial: true, release: ''};
+  const two = solve(m);
+  near(evaluate(two.final.fields[0].M, 2), 3);
+  near(evaluate(two.final.fields[1].M, 0), 3);
+});
+test('Forza sul lato dell’asta in un pattino: resta sull’asta, sul lato del nodo va al vincolo', () => {
+  const P = 2, L = 4, r = solve(span({slideJ: 'normal', fyJ: -P})), f = r.final.fields[0];
+  near(evaluate(f.M, 0), -P * L / 2);
+  near(evaluate(f.M, L), P * L / 2);
+  near(value(r, 'r/A/1'), P);
+  near(value(r, 'r/B/1'), 0);
+  const nodal = span({slideJ: 'normal'});
+  nodal.nodes[1].fy = -P;
+  const other = solve(nodal);
+  near(evaluate(other.final.fields[0].M, 0), 0);
+  near(value(other, 'r/B/1'), P);
+});
