@@ -19,42 +19,55 @@ const Draft = (() => {
         path(`M ${u - a - b * .47} ${v - b + a * .47} L ${u} ${v} ${u - a + b * .47} ${v - b - a * .47}`,
                color, 'none', w);
   }
-  function viewport(nodes, width, height) {
+  // The editor keeps room around the structure for supports, loads and dimension chains.
+  function viewport(nodes, width, height, roomy = false) {
     const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
     if (!nodes.length) {
       xs.push(-2, 4);
       ys.push(-1, 3);
     }
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-    const scale = Math.min((width - 130) / (x1 - x0 || 3), (height - 132) / (y1 - y0 || 2));
+    const [mx, my] = roomy ? [Math.min(210, width * .36), Math.min(190, height * .42)] : [130, 132];
+    const scale = Math.min((width - mx) / (x1 - x0 || 3), (height - my) / (y1 - y0 || 2));
     return {
       width,
       height,
       scale,
-      ox: width / 2 - (x0 + x1) * scale / 2,
-      oy: height / 2 + (y0 + y1) * scale / 2 + 5
+      ox: width / 2 - (x0 + x1) * scale / 2 + (roomy ? 12 : 0),
+      oy: height / 2 + (y0 + y1) * scale / 2 + (roomy ? -10 : 5)
     };
   }
   const pos = (n, v) => [v.ox + n.x * v.scale, v.oy - n.y * v.scale];
-  function support(x, y, axes) {
+  // External restraint drawn as on the exam sheets. axes lists the restrained components
+  // (0 = H, 1 = V, 2 = W), (ox, oy) points from the node towards the ground and central
+  // tells that the node itself is already drawn as a hinge.
+  function support(x, y, axes, ox, oy, central) {
     if (!axes.length)
       return '';
-    let sym = '';
-    if (axes.includes(2) && axes.length === 3) {
-      sym = line(-14, 4, 14, 4, green, 2);
-      for (let a = -12; a <= 14; a += 5)
-        sym += line(a, 5, a - 5, 11, green, 1);
-    } else if (!axes.includes(2)) {
-      sym = path('M 0 2 L -10 15 L 10 15 Z', green, '#e1f1e9');
-      if (axes.length === 1)
-        sym += circle(-6, 18, 2, green, 'white', 1) + circle(6, 18, 2, green, 'white', 1) +
-            line(-13, 21, 13, 21, green, 1);
-      else
-        sym += line(-13, 18, 13, 18, green, 1);
-    } else
-      return label(x, y + 24, axes.map(d => ['H', 'V', 'C'][d]).join('+'), green, 11);
-    return `<g transform="translate(${x} ${y}) rotate(${axes.length === 1 && axes[0] === 0 ? -90 : 0})">${
-        sym}</g>`;
+    const hatch = (at, half) => {
+      let lines = '';
+      for (let a = -half + 3; a <= half + 3; a += 5)
+        lines += line(a, at, a - 6, at + 7, green, 1);
+      return lines;
+    };
+    const plate = (at, half) => line(-half, at, half, at, green, 3, 'stroke-linecap="round"');
+    const turned = `<g transform="translate(${x} ${y}) rotate(${Math.atan2(oy, ox) * 180 / Math.PI - 90})">`;
+    const pin = central ? 0 : 5.5, hinge = central ? '' : circle(0, pin, 4.2, green, '#fff', 1.5);
+    if (axes.length === 3)
+      // Incastro.
+      return turned + plate(0, 14) + hatch(1.5, 14) + '</g>';
+    if (axes.includes(2) && axes.length === 2)
+      // Doppio pendolo: blocks the rotation and the translation towards the ground.
+      return turned + line(0, 0, 0, 7, green, 2.4) + plate(7, 10) + plate(13, 13) + hatch(14.5, 13) + '</g>';
+    if (axes.includes(2))
+      return label(x + ox * 24, y + oy * 24 + 4, 'W', green, 11);
+    if (axes.length === 2)
+      // Cerniera a terra.
+      return turned + line(0, pin + 4, 0, pin + 11, green, 2.4) + plate(pin + 11, 13) + hatch(pin + 12.5, 13) +
+          hinge + '</g>';
+    // Carrello.
+    return turned + circle(-3.7, pin + 7.6, 3.2, green, '#fff', 1.3) + circle(3.7, pin + 7.6, 3.2, green, '#fff', 1.3) +
+        plate(pin + 12.4, 13) + hatch(pin + 13.9, 13) + hinge + '</g>';
   }
   // Sliding connection between a member end and its node. (mx, my) points from the node
   // into the member and (dx, dy) is the free sliding direction, both in screen axes.
@@ -207,7 +220,17 @@ const Draft = (() => {
         gridID})"/>`;
     if (!editable) out='<rect width="100%" height="100%" fill="white"/>';
     const amplitude=Math.min(46,(h-100)*.108,(w-90)*.18);
-    let fibres='', fills = '', members = '', symbols = '', labels = '', hits = '';
+    let fibres='', fills = '', members = '', symbols = '', springs = '', labels = '', hits = '';
+    // Screen direction that points away from the members meeting at a node, among the given ones.
+    const outward = (id, [x, y], candidates) => {
+      let sx = 0, sy = 0;
+      for (const e of model.members) {
+        if (e.a !== id && e.b !== id) continue;
+        const [u, v] = at(e.a === id ? e.b : e.a), L = Math.hypot(u - x, v - y);
+        if (L) { sx += (u - x) / L; sy += (v - y) / L; }
+      }
+      return candidates.reduce((best, d) => d[0] * sx + d[1] * sy < best[0] * sx + best[1] * sy - 1e-9 ? d : best);
+    };
     const numbers = [];
     const max = state ?
         Math.max(
@@ -281,11 +304,10 @@ const Draft = (() => {
         else if (!centralHinges.has(id) && (hinge || e.type === 'bar'))
           symbols += circle(px + c * 8 * sign, py + s * 8 * sign, 3.8, green, '#fff', 1.4);
       });
-      if (editable) for (const [kSpring, px, py, sign, kind] of [[e.springI, x, y, 1, 'mi'], [e.springJ, u, v, -1, 'mj']]) {
-        if (kSpring && !releases.some(d => d.kind === kind)) {
-          const cx = px + c * 13 * sign, cy = py + s * 13 * sign;
-          symbols += path(`M ${cx - 5} ${cy} a 5 5 0 1 1 5 5 a 3 3 0 1 1 3 -3`, green, '#f2faf6', 1.5);
-        }
+      // A rotational spring between a member end and its node: two concentric circles on the node.
+      if (editable) for (const [kSpring, px, py, kind] of [[e.springI, x, y, 'mi'], [e.springJ, u, v, 'mj']]) {
+        if (kSpring && !releases.some(d => d.kind === kind))
+          springs += circle(px, py, 7.6, green, '#fff', 1.5) + circle(px, py, 4, green, '#fff', 1.5);
       }
       if (showLoads && unitLoad && unitLoad.kind !== 'r' && unitLoad.k === k) {
         if (unitLoad.kind === 'n') {
@@ -306,7 +328,14 @@ const Draft = (() => {
       const [x, y] = at(n.id), chosen = selected === 'n' + i || first === n.id;
       const axes = Mechanics.supportAxes[n.support].filter(
           d => !rel.some(a => a.kind === 'r' && a.k === i && a.d === d));
-      if (editable) symbols += support(x, y, axes);
+      if (editable && axes.length) {
+        // Preference on ties: ground below, wall on the left, wall on the right, ceiling.
+        const sides = [[0, 1], [-1, 0], [1, 0], [0, -1]];
+        const free = axes.length === 3 || (axes.length === 2 && !axes.includes(2)) ? sides :
+            sides.filter(d => (axes.includes(0) && !axes.includes(1)) === (d[0] !== 0));
+        const [ox, oy] = outward(n.id, [x, y], free);
+        symbols += support(x, y, axes, ox, oy, centralHinges.has(n.id));
+      }
       if (showLoads && realLoads) {
         symbols += pointLoad(x, y, n.fx, 0, caption(n.fx, 'F'), (x-w/2)*n.fx>0) +
             pointLoad(x, y, 0, n.fy, caption(n.fy, 'F'));
@@ -347,7 +376,7 @@ const Draft = (() => {
         });
       }
     }
-    out += fills + fibres + members + symbols + labels + (editable ? hits : '');
+    out += fills + fibres + members + symbols + springs + labels + (editable ? hits : '');
     if (editable) {
       out += arrow(22, h - 48, 48, h - 48, faint, 1) + arrow(22, h - 48, 22, h - 71, faint, 1) +
           label(52, h - 45, 'x', faint, 10) + label(21, h - 76, 'y', faint, 10);

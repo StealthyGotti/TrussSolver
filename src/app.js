@@ -281,7 +281,7 @@
   function board() {
     const svg = $('#canvas'), width = Math.max(300, svg.clientWidth), height = svg.clientHeight;
     if (fitNeeded || !view) {
-      view = Draft.viewport(model.nodes, width, height);
+      view = Draft.viewport(model.nodes, width, height, true);
       view.fitScale = view.scale;
       fitNeeded = false;
     } else if (view.width !== width || view.height !== height) {
