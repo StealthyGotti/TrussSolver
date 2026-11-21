@@ -84,3 +84,22 @@ test('Gli schemi di risultato omettono griglia, simboli di vincolo e marcatori d
     assert.match(svg,/class="diagram-ribs"/);
   }
 });
+
+test('Deformazioni termiche: quadratino per ε e trapezio per θ a metà asta', () => {
+  const model=loadedBeam();
+  assert.doesNotMatch(draw(model),/thermal-/);
+  model.members[0].eps=-1;
+  assert.match(draw(model),/class="thermal-elongation"/);
+  assert.doesNotMatch(draw(model),/thermal-curvature/);
+  model.members[0].eps=0;
+  model.members[0].kappa=-1;
+  const up=draw(model).match(/<path d="([^"]*)"[^>]*class="thermal-curvature"/)[1];
+  model.members[0].kappa=1;
+  const down=draw(model).match(/<path d="([^"]*)"[^>]*class="thermal-curvature"/)[1];
+  // The wide base of the trapezium follows the stretched side: below an eastward member for θ > 0.
+  const firstY=d=>Number(d.split(' ')[2]);
+  assert.ok(firstY(down) > firstY(up));
+  // The marks belong to the scheme, not to the result diagrams.
+  const r=Mechanics.solve(model);
+  assert.doesNotMatch(draw(model,r,r.final,'M'),/thermal-/);
+});

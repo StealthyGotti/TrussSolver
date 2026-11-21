@@ -304,9 +304,20 @@ const Draft = (() => {
         symbols += pointLoad(ax, ay, fx, 0, caption(fx, 'F')) + pointLoad(ax, ay, 0, fy, caption(fy, 'F'));
         if (m) symbols += couple(ax, ay, m, caption(m, 'W'));
       });
-      if (showLoads && realLoads && e.type==='bar' && e.eps)
-        symbols += path('M -4 -4 h 8 v 8 h -8 Z',green,'none',1,
-          `transform="translate(${(x+u)/2} ${(y+v)/2})"`);
+      if (showLoads && realLoads && (e.eps || e.kappa)) {
+        // Thermal marks of the exam sheets, at mid-length: a small square for the elongation ε
+        // and a small trapezium for the curvature θ, wider on the side of the stretched fibres.
+        const both = e.eps && e.kappa ? 9 : 0, mx = (x + u) / 2, my = (y + v) / 2;
+        const mark = (along, points, tag) => path(
+            'M ' + points.map(([a, r]) => (mx + (along + a) * c - r * s) + ' ' + (my + (along + a) * s + r * c)).join(' L ') + ' Z',
+            green, '#fff', 1.3, `class="${tag}"`);
+        if (e.eps)
+          symbols += mark(-both, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 'thermal-elongation');
+        if (e.kappa) {
+          const wide = Math.sign(e.kappa) * 6;
+          symbols += mark(both, [[-7, wide], [7, wide], [3.5, -wide], [-3.5, -wide]], 'thermal-curvature');
+        }
+      }
       if (editable) [[e.hi, x, y, 1, e.a], [e.hj, u, v, -1, e.b]].forEach(([hinge, px, py, sign, id], end) => {
         const slide = Mechanics.slideDirection(e, end, c, -s);
         if (slide)
