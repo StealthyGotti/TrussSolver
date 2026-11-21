@@ -1,3 +1,5 @@
+**🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
+
 # 1 · Telaio libero con biella AB
 
 All’avvio l’editor mostra questo tema. In alternativa scegli **Apri** e carica [modello.json](modello.json). Lo scopo è trovare lo sforzo nella biella AB e i diagrammi del telaio usando come incognita la coppia $W_{AE}$ trasmessa dal nodo A all’asta AE.

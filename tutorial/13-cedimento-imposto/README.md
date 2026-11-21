@@ -1,3 +1,5 @@
+**🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
+
 # 13 · Cedimento imposto e asta inclinata
 
 Scegli **Modelli → Tema 13** oppure apri [modello.json](modello.json). L’incognita assegnata è una forza: $X=V_G$, la reazione del carrello in G.

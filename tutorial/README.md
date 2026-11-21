@@ -1,3 +1,5 @@
+**🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
+
 # Temi svolti
 
 Ogni tema si apre dal menu **Modelli** dell’editor oppure con **Apri**, scegliendo il file `modello.json` della sua cartella. Premi **Calcola** e confronta le schede dei risultati con i valori riportati nella guida.

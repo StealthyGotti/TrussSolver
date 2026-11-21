@@ -1,3 +1,5 @@
+**🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
+
 # 2 · Carrello inclinato e molla rotazionale
 
 Scegli **Modelli → Tema 2** oppure apri [modello.json](modello.json). L’incognita è la coppia $W_{FD}$ trasmessa dalla molla rotazionale in F. Il tema usa un carrello interno su piano inclinato e due forze applicate su un solo lato del nodo.

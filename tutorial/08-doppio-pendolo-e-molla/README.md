@@ -1,3 +1,5 @@
+**🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
+
 # 8 · Doppio pendolo e molla traslazionale
 
 Scegli **Modelli → Tema 8** oppure apri [modello.json](modello.json). L’incognita assegnata dalla traccia è $X=W_{BC}$, la coppia trasmessa dal nodo B all’asta BC.

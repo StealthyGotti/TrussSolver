@@ -1,3 +1,5 @@
+**🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
+
 # 11 · Pattini interni e carico su un lato
 
 Scegli **Modelli → Tema 11** oppure apri [modello.json](modello.json). L’incognita è $X=W_{AD}$, la coppia trasmessa dal nodo A all’asta AD attraverso la molla rotazionale.

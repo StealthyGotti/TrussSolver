@@ -1,116 +1,133 @@
+**🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
+
 # TrussSolver
 
-Editor per strutture piane che svolge il metodo delle forze come nei temi d’esame: disegni travi, bielle, vincoli e carichi, scegli l’incognita iperstatica e ottieni i diagrammi di sforzo normale, taglio e momento della struttura principale, di servizio e finale, con il procedimento dei lavori virtuali e la verifica della sezione.
+Disegni una struttura piana come quella della traccia d’esame, premi **Calcola** e ottieni lo svolgimento completo con il metodo delle forze: i diagrammi N, T e M, il valore dell’incognita iperstatica e tutti i passaggi dei lavori virtuali.
 
-## Avvio
+È pensato per studenti di ingegneria che vogliono controllare i propri conti passo per passo. È gratuito, funziona nel browser e non richiede installazioni.
 
-Scarica ed estrai la cartella del progetto, oppure clona il repository. Apri **index.html** con un browser moderno su Windows, macOS o Linux. I file in `src/` e `style.css` devono restare accanto a `index.html`. Il programma funziona offline e non richiede installazioni. Per ospitarlo su un server statico o su GitHub Pages, usa la radice del progetto come cartella del sito.
-
-## Temi d’esame fra i modelli
-
-Il menu **Modelli** contiene cinque temi già svolti, scelti perché insieme coprono tutti i vincoli e i carichi che compaiono nelle tracce. I risultati di ciascuno sono confrontati con la soluzione pubblicata dai test del progetto.
-
-| Modello | Che cosa contiene | Incognita |
-| --- | --- | --- |
-| [Tema 1](tutorial/01-telaio-con-biella/README.md) | Telaio libero, biella con elongazione termica, cerniere interne | W_AE = −13/16 Fb |
-| [Tema 2](tutorial/02-telaio-con-molla/README.md) | Carrello interno su piano inclinato, molla rotazionale, carichi su un lato del nodo, sezione con tratti inclinati | W_FD = 31/42 Fb |
-| [Tema 8](tutorial/08-doppio-pendolo-e-molla/README.md) | Doppio pendolo a terra, carrello con molla traslazionale, asta inclinata con curvatura termica | W_BC = −553/264 Fb |
-| [Tema 11](tutorial/11-pattini-interni/README.md) | Pattini interni, carico e coppia su un lato del nodo, molla rotazionale | W_AD = 39/31 Fb |
-| [Tema 13](tutorial/13-cedimento-imposto/README.md) | Cedimento imposto, carrello interno, asta lunga √5 b | V_G = −59/8 F |
-
-La [raccolta dei tutorial](tutorial/README.md) spiega come leggere schemi, segni e risultati.
-
-## Unità e convenzioni
-
-Il modello si scrive nelle unità delle tracce, senza valori numerici.
-
-| Grandezza | Unità | Esempio |
-| --- | --- | --- |
-| Lunghezze e coordinate | b | un nodo in x = 2 dista 2b dall’origine |
-| Forze H, V | F | `-3` è una forza 3F verso sinistra o verso il basso |
-| Coppie W | Fb | positive in senso antiorario |
-| Carichi distribuiti p, q | F/b | p lungo x, q lungo y, assi globali |
-| Rigidezze flessionali | EJ | `1` su tutte le aste dei temi |
-| Molle rotazionali e traslazionali | EJ/b ed EJ/b³ | `3` per k = 3EJ/b |
-| Elongazione ε e curvatura θ | Fb²/EJ e Fb/EJ | `-1` per ε = −b²F/EJ |
-| Cedimenti e rotazioni imposte | Fb³/EJ e Fb²/EJ | `3` per v = 3b³F/EJ |
-
-- **Verso delle aste.** L’asta AB va da A a B, come nel nome scritto sulla traccia. L’ascissa x parte dalla prima lettera.
-- **Tratteggio.** La linea tratteggiata indica il lembo teso per momento positivo e all’inizio sta a destra di chi percorre l’asta da A a B. Puoi spostarla in **Proprietà → Tratteggio**. Nel diagramma M la curva resta sul lato delle fibre tese.
-- **Nomi delle incognite.** H_A, V_A e W_A sono le reazioni del vincolo in A. N_AB è lo sforzo normale di AB. W_AB è la coppia che il nodo A trasmette all’asta AB, positiva se antioraria.
-- **Frazioni, decimali e radici.** I valori compaiono come frazioni. Con **Mostra decimali**, accanto a **Modelli**, diventano numeri decimali. Se un’asta ha lunghezza irrazionale, per esempio √5 b, i risultati si scrivono con la radice, come −√5/4. Nei campi puoi inserire `3/2` oppure `1,5`.
-
-## Disegno della struttura
-
-Seleziona **Mano** e trascina la tavola con il mouse o con un dito. Le lenti regolano lo zoom, la rotellina ingrandisce attorno al puntatore e **Inquadra tutta la struttura** ripristina la vista d’insieme. Sotto e a sinistra della struttura compaiono le quote in multipli di b.
-
-- **Nodi e aste.** Con **Nodo** tocca la griglia, con **Asta** tocca in sequenza il primo e il secondo nodo. Un carico concentrato intermedio richiede un nodo nel punto di applicazione. I nodi prendono le lettere A, B, C nell’ordine in cui li crei: nelle proprietà del nodo puoi dare a ciascuno la lettera della traccia, così aste e incognite hanno gli stessi nomi della soluzione.
-- **Vincoli a terra.** Nelle proprietà del nodo scegli incastro, cerniera, carrello o doppio pendolo. Il doppio pendolo blocca la rotazione e una traslazione. In **Molle e cedimenti del vincolo** assegni la rigidezza di una molla e lo spostamento imposto lungo ogni componente vincolata.
-- **Collegamenti interni.** Nelle proprietà dell’asta scegli come ogni estremo si collega al nodo.
-
-  | Collegamento | Che cosa trasmette |
-  | --- | --- |
-  | Continuo | forza e coppia |
-  | Cerniera | solo forza |
-  | Pattino | coppia e forza perpendicolare allo scorrimento |
-  | Carrello | solo forza perpendicolare allo scorrimento |
-
-  Pattini e carrelli scorrono lungo l’asta, di traverso oppure su un piano inclinato di cui indichi la direzione con Δx e Δy. Per un piano 1:1 inserisci `1` e `1`.
-- **Carichi.** Forze e coppie nodali si assegnano al nodo, il carico uniforme all’asta. In **Carichi su un solo lato del nodo** inserisci forze e coppie come H_BA o W_CF, applicate all’estremo di un’asta dalla sua parte rispetto a cerniere, pattini e carrelli.
-- **Molle rotazionali e deformazioni impresse.** Le molle fra asta e nodo e i valori di ε e θ si trovano nelle proprietà dell’asta.
-- **Incognita.** In **Modello completo** scegli l’incognita da rilasciare oppure lasci la scelta automatica. Ogni modifica richiede un nuovo calcolo.
-- **Salvataggio.** **Salva** scarica un file JSON riapribile con **Apri**. La freccia curva annulla l’ultima modifica.
-
-## Risultati
-
-Dopo **Calcola** la sezione **Analisi strutturale** mostra cinque schede, impaginate come i fogli delle soluzioni.
-
-| Scheda | Contenuto |
+| Lo schema che disegni | I diagrammi che ottieni |
 | --- | --- |
-| **Azioni interne** | Diagrammi N, T e M quotati in multipli di F e Fb, per la struttura finale, la principale e ogni servizio. Sotto, le equazioni N(x), T(x) e M(x) dell’asta scelta su principale, servizio e finale |
-| **Reazioni** | Aste isolate con le forze e le coppie trasmesse dai nodi, e le reazioni dei vincoli |
-| **Equilibrio** | Sistema delle equazioni di equilibrio e soluzioni statiche |
-| **Lavori virtuali** | Schema di calcolo iperstatico, M₀ e Mₓ, quadro dei contributi del PLV, sviluppo degli integrali e valore dell’incognita |
-| **Sezione** | Area, baricentro, momenti d’inerzia, σ massima, σ, τ e von Mises nel punto assegnato |
+| ![Schema del tema 1 con vincoli e carichi](tutorial/01-telaio-con-biella/schema.svg) | ![Diagrammi finali di normale, taglio e momento](tutorial/01-telaio-con-biella/diagrammi.svg) |
 
-Per la verifica della sezione apri **Modello completo → Sezione e tensioni**. Inserisci b in mm e F in N, scegli la trave con il verso che lascia il lembo inferiore a destra, il nodo in cui calcolare le tensioni e la quota del punto *. Il profilo della sezione è l’elenco delle coppie quota e larghezza a partire dal lembo inferiore. La stessa quota ripetuta crea un gradino, due larghezze diverse a quote diverse creano un tratto inclinato. La sezione del tema 1 si scrive così:
+## Come iniziare
 
-```text
-0   21
-14  21
-14  7
-50  7
-50  49
-63  49
-```
+1. **Scarica.** In questa pagina premi **Code → Download ZIP** ed estrai la cartella.
+2. **Apri.** Fai doppio clic su `index.html`. Si apre nel browser e funziona anche senza internet.
+3. **Prova.** All’avvio trovi il tema 1 già risolto. Dal menu **Modelli** puoi aprire gli altri temi pronti.
 
-## Modello meccanico
+In alto a destra scegli la lingua, **Italiano** o **English**.
 
-Analisi elastica lineare di telai piani a piccoli spostamenti, con aste rettilinee di Eulero–Bernoulli e rigidezze costanti per asta. Il solutore assembla le equazioni di equilibrio dei nodi, aggiunge un’equazione per ogni scorrimento libero e separa le incognite iperstatiche. Risolve la struttura principale con i carichi assegnati, poi un servizio per ogni incognita unitaria. I prodotti dei momenti sono polinomi integrati in forma chiusa.
+## Risolvere un tema in sei passi
 
-Nell’equazione di congruenza entrano la flessione, l’elongazione e la curvatura impresse, le molle rotazionali, le molle dei vincoli e i cedimenti imposti. La deformabilità assiale elastica è facoltativa ed è spenta nei temi. Una struttura senza vincoli a terra è ammessa se i carichi sono autoequilibrati.
+Scegli **Modelli → Nuovo disegno** e segui l’ordine della traccia.
 
-**Limiti.** Una sola struttura connessa per calcolo, carichi distribuiti uniformi, vincoli a terra allineati agli assi, sezioni simmetriche rispetto all’asse verticale. L’incognita è una reazione, uno sforzo normale o una coppia di estremità.
+1. **Nodi.** Con **Nodo** tocca la griglia nei punti con una lettera. Un quadretto vale mezzo b. Poi seleziona ogni nodo e scrivi nel campo **Nome** la lettera che ha sulla traccia.
+2. **Aste.** Con **Asta** tocca il primo e poi il secondo nodo, nell’ordine del nome dell’asta: per l’asta CA tocca prima C e poi A.
+3. **Vincoli a terra.** Seleziona il nodo e scegli il **Tipo di appoggio**.
+4. **Cerniere, pattini e carrelli interni.** Seleziona l’asta e in **Collegamenti ai nodi** scegli come si attacca a ciascun estremo.
+5. **Carichi.** Forze e coppie sui nodi, carico distribuito ed effetti termici sulle aste.
+6. **Calcola.** In **Modello completo** scegli l’incognita indicata dalla traccia, poi premi **Calcola**.
 
-## Codice
+**Seleziona** serve per modificare, **Mano** per spostare la tavola, la freccia curva per annullare. **Salva** scarica il disegno e **Apri** lo ricarica.
 
-Il progetto è scritto in **JavaScript**, con HTML e CSS per l’interfaccia e SVG per i disegni. Non ci sono pacchetti da installare.
+## Dalla traccia all’editor
 
-| File | Funzione |
+| Sulla traccia | Dove si inserisce |
 | --- | --- |
-| [src/solver.js](src/solver.js) | Equilibrio, vincoli interni, campi di sollecitazione, lavori virtuali e congruenza |
-| [src/examples.js](src/examples.js) | Temi d’esame disponibili nel menu Modelli |
-| [src/section.js](src/section.js) | Proprietà della sezione e tensioni |
+| Carrello, cerniera a terra, incastro, doppio pendolo | Nodo → **Tipo di appoggio** |
+| Cerchio centrato su un nodo: cerniera fra le aste | Asta → **Collegamenti ai nodi** → Cerniera |
+| Pattino: due trattini sull’asta o manicotto a U | Asta → **Collegamenti ai nodi** → Pattino |
+| Carrello fra due aste, anche con «Piano 1:1» | Asta → **Collegamenti ai nodi** → Carrello. Per il piano 1:1 scrivi Δx = 1 e Δy = 1 |
+| Doppio cerchio con k = 3EJ/b: molla rotazionale | Asta → **Molle rotazionali agli estremi** → `3` |
+| Molla sotto un vincolo, cedimento v = 3δ | Nodo → **Molle e cedimenti del vincolo** |
+| H_A = −3F, V_A, W_A | Nodo → **Carichi nodali** → `-3` |
+| H_BA, W_CF: carichi su un’asta precisa | Asta → **Carichi su un solo lato del nodo** |
+| q_AB = −q, p_AB | Asta → **Carico uniforme**: q lungo y, p lungo x |
+| ε = −b²F/EJ, quadratino sull’asta | Asta → **Deformazioni impresse** → ε = `-1` |
+| θ = −bF/EJ, trapezio sull’asta | Asta → **Deformazioni impresse** → θ = `-1` |
+| X = W_BC | **Modello completo → Incognita da rilasciare** |
+| Sezione, b in mm e F in N | **Modello completo → Sezione e tensioni** |
+
+## Come si scrivono i numeri
+
+Si scrive solo il coefficiente che compare sulla traccia: le unità sono già F, b ed EJ.
+
+| Sulla traccia | Nel campo |
+| --- | --- |
+| H = −3F | `-3` |
+| W = 5Fb | `5` |
+| q = −7F/b | `-7` |
+| k = 3EJ/b | `3` |
+| lunghezza 2b | coordinate che distano `2` |
+
+Tutte le aste dei temi hanno rigidezza EJ, cioè `1`, già impostata. Puoi scrivere frazioni come `3/2` oppure decimali come `1,5`. I risultati sono frazioni: con **Mostra decimali** diventano numeri.
+
+## Leggere i risultati
+
+| Scheda | Che cosa trovi |
+| --- | --- |
+| **Azioni interne** | I diagrammi N, T e M della struttura finale, della principale e di servizio. Sotto, le equazioni N(x), T(x) e M(x) dell’asta che scegli |
+| **Reazioni** | Ogni asta isolata con le forze ai suoi estremi, e le reazioni dei vincoli |
+| **Equilibrio** | Il sistema delle equazioni di equilibrio |
+| **Lavori virtuali** | Schema di calcolo, diagrammi M₀ e Mₓ, quadro dei contributi del PLV, integrali svolti e valore di X |
+| **Sezione** | Baricentro, momenti d’inerzia e tensioni σ, τ e von Mises |
+
+Il **tratteggio** accanto a ogni asta indica il lato teso per momento positivo. All’inizio sta a destra di chi percorre l’asta dalla prima alla seconda lettera, come sulle tracce.
+
+## Se qualcosa non torna
+
+| Che cosa vedi | Che cosa controllare |
+| --- | --- |
+| «Iperstatica · grado 2» ma la traccia ne ha una sola | Manca una cerniera. Un cerchio centrato sul nodo è una cerniera fra le aste, anche se sotto c’è un carrello |
+| «Struttura labile» | Manca un vincolo, c’è una cerniera di troppo oppure il pattino è sull’asta sbagliata |
+| «Compatibilità singolare» | L’incognita lavora solo assialmente: spunta **Includi la deformabilità assiale** |
+| Segni opposti a quelli della soluzione | Verso dell’asta, lato del tratteggio o segno di θ. Il verso si legge dal nome: CA parte da C |
+| Incognite con nomi diversi dalla traccia | Rinomina i nodi con le lettere della traccia |
+| Frazioni lunghe e poco leggibili | Attiva **Mostra decimali** |
+
+## Temi già pronti
+
+Cinque temi sono già inseriti e confrontati con le soluzioni pubblicate. Ognuno ha una guida passo per passo.
+
+| Tema | Che cosa contiene | Risultato |
+| --- | --- | --- |
+| [Tema 1](tutorial/01-telaio-con-biella/README.md) | Telaio senza vincoli a terra, biella con elongazione termica | W_AE = −13/16 Fb |
+| [Tema 2](tutorial/02-telaio-con-molla/README.md) | Carrello interno su piano inclinato, molla rotazionale | W_FD = 31/42 Fb |
+| [Tema 8](tutorial/08-doppio-pendolo-e-molla/README.md) | Doppio pendolo, molla traslazionale, curvatura termica | W_BC = −553/264 Fb |
+| [Tema 11](tutorial/11-pattini-interni/README.md) | Pattini interni, carichi su un lato del nodo | W_AD = 39/31 Fb |
+| [Tema 13](tutorial/13-cedimento-imposto/README.md) | Cedimento imposto, asta lunga √5 b | V_G = −59/8 F |
+
+L’[indice dei tutorial](tutorial/README.md) spiega come leggere schemi e segni.
+
+## Che cosa calcola e che cosa no
+
+Telai piani elastici con aste rettilinee, risolti con il metodo delle forze e il principio dei lavori virtuali. Contano la flessione, gli effetti termici, le molle e i cedimenti. La deformabilità assiale è facoltativa e nei temi è spenta.
+
+Non sono previsti carichi distribuiti variabili, vincoli a terra inclinati e sezioni non simmetriche.
+
+## Gratis per tutti
+
+TrussSolver è gratuito e chiunque può usarlo e condividerlo.
+
+## Per chi vuole guardare il codice
+
+Il progetto è in JavaScript puro, senza pacchetti da installare.
+
+| File | Che cosa fa |
+| --- | --- |
+| [src/solver.js](src/solver.js) | Equilibrio, vincoli, lavori virtuali e congruenza |
+| [src/examples.js](src/examples.js) | I temi del menu Modelli |
+| [src/section.js](src/section.js) | Sezione e tensioni |
 | [src/numbers.js](src/numbers.js) | Frazioni, radici e decimali |
-| [src/drawing.js](src/drawing.js) e [src/navigation.js](src/navigation.js) | Tavola, simboli dei vincoli, diagrammi, reazioni, spostamento e zoom |
-| [src/report.js](src/report.js) e [src/app.js](src/app.js) | Schede dei risultati e comandi dell’editor |
+| [src/i18n.js](src/i18n.js) | Testi in inglese |
+| [src/drawing.js](src/drawing.js) e [src/navigation.js](src/navigation.js) | Disegno, diagrammi e zoom |
+| [src/report.js](src/report.js) e [src/app.js](src/app.js) | Schede dei risultati ed editor |
 
-## Verifica
-
-Con Node.js 18 o successivo, dalla cartella del progetto:
+Con Node.js 18 o successivo i test si avviano dalla cartella del progetto:
 
 ```sh
 node --test
 ```
 
-I test confrontano il solutore con casi analitici e i cinque temi con le soluzioni pubblicate: incognita iperstatica, azioni interne di ogni asta, quadro dei lavori virtuali e tensioni nella sezione. Node.js serve solo per eseguire i test.
+Confrontano il solutore con casi analitici e i cinque temi con le soluzioni pubblicate.
