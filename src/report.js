@@ -1,8 +1,10 @@
 const Report = (() => {
   const {esc} = Draft;
+  // W_AB becomes W with subscript AB, as on the exam sheets.
+  const name = text => esc(text).replace(/([A-Za-zδ])_([A-Za-z0-9,]+)/g, '$1<sub>$2</sub>');
   const table = (heads, rows) => `<div class="scroll"><table><thead><tr>${
-      heads.map(x => '<th>' + esc(x) + '</th>').join('')}</tr></thead><tbody>${
-      rows.map(r => '<tr>' + r.map(x => '<td>' + esc(x) + '</td>').join('') + '</tr>')
+      heads.map(x => '<th>' + name(x) + '</th>').join('')}</tr></thead><tbody>${
+      rows.map(r => '<tr>' + r.map(x => '<td>' + name(x) + '</td>').join('') + '</tr>')
           .join('')}</tbody></table></div>`;
   function poly(p, fmt) {
     const terms = p.map((v, i) => ({v, i})).filter(t => Math.abs(t.v) > 1e-12);
@@ -82,25 +84,20 @@ const Report = (() => {
   function render(host, model, r, ui, onChange) {
     const fmt = ui.decimals ? NumericDisplay.decimal : NumericDisplay.fraction;
     const tabs = ['Diagrammi', 'Equilibrio', 'Lavori virtuali'];
-    const exam = model.exercise === 'tema-1';
-    const sectionIndex = exam ? r.elements.findIndex(e=>e.a==='H' && e.b==='F' && e.type==='beam') : -1;
+    const sectionIndex = model.exercise === 'tema-1' ? r.elements.findIndex(e=>e.a==='H' && e.b==='F' && e.type==='beam') : -1;
     if (sectionIndex>=0) tabs.push('Sezione H');
     if (ui.tab>=tabs.length) ui.tab=0;
     const unknowns = r.free.map(j => r.descriptors[j]);
     const xi = i => 'X' + String(i + 1);
     const card = unknowns.length ? unknowns.map((d,i)=>{
-      const moment=d.unit==='kN·m', base=moment?Models.reference.W:Models.reference.F;
-      const name=exam && d.id==='E/A/mj'?'W_AE':d.label;
-      const relativeValue=exam ? '<p>'+fmt(r.X[i]/base)+(moment?' Fb':' F')+'</p>' : '';
-      return `<div class="result-card"><div class="cap">Incognita ${xi(i)} · ${esc(name)}</div>
-        <div class="big">${fmt(r.X[i])} <small>${d.unit}</small></div>${relativeValue}</div>`;
+      return `<div class="result-card"><div class="cap">Incognita iperstatica ${xi(i)} = ${name(d.label)}</div>
+        <div class="big">${fmt(r.X[i])} <small>${d.unit}</small></div></div>`;
     }).join('') : '<div class="result-card"><div class="cap">Struttura isostatica</div><strong>Soluzione dall’equilibrio</strong></div>';
     const stageNames = [
       ['final', 'Struttura finale'], ['primary', 'Struttura principale'],
       ...unknowns.map((_, i) => [String(i), 'Servizio ' + (i + 1)])
     ];
-    const state = stateFor(r, ui.stage), comp = ui.comp, units = comp === 'M' ? 'kN·m' : 'kN';
-    const relative = exam && (ui.stage==='final' || ui.stage==='primary');
+    const state = stateFor(r, ui.stage), comp = ui.comp, units = comp === 'M' ? 'Fb' : 'F';
     const components = ['N','T','M'];
     const names = {all:'Tutti', N:'N · Normale', T:'T · Taglio', M:'M · Momento'};
     const shown = comp==='all' ? components : [comp];
@@ -108,7 +105,7 @@ const Report = (() => {
         tabs.map((t, i) => `<button data-tab="${i}" class="${ui.tab === i ? 'on' : ''}">${t}</button>`)
             .join('')}</div>`;
     const coordinate =
-        'Ascissa s in metri dal primo al secondo nodo. I segni di M(s) in questa tabella seguono il tratteggio scelto per ciascuna asta.';
+        'Ascissa s in unità di b dal primo al secondo nodo. I segni di M(s) in questa tabella seguono il tratteggio scelto per ciascuna asta.';
     const stateSelect = `<select id="report-stage" aria-label="Struttura da analizzare">${
         stageNames.map(([v, t]) => `<option value="${v}" ${ui.stage === v ? 'selected' : ''}>${t}</option>`)
             .join('')}</select>`;
@@ -124,7 +121,7 @@ const Report = (() => {
         const p = field(comp), ord = Draft.ordinates(p, e.L);
         return [
           e.name, fmt(e.L), poly(p, fmt), fmt(ord[0][1]), fmt(ord[1][1]),
-          ord.length > 2 ? fmt(ord[2][1]) + ' @ ' + fmt(ord[2][0]) + ' m' : '—'
+          ord.length > 2 ? fmt(ord[2][1]) + ' in s = ' + fmt(ord[2][0]) : '—'
         ];
       });
       const stageInfo = ui.stage === 'final' ?
@@ -138,11 +135,11 @@ const Report = (() => {
       ).join('');
       const plots = shown.map(c=>`<div class="plot ${r.elements.length>5?'complex':''}">
         <svg id="result-plot-${c}" aria-label="Diagramma ${names[c]}"></svg></div>`).join('');
-      const heads = comp==='all' ? ['Asta i → j','L [m]','N(s) [kN]','T(s) [kN]','M(s) [kN·m]'] :
-        ['Asta i → j','L [m]',comp+'(s) ['+units+']',comp+'(0)',comp+'(L)','Estremo interno'];
+      const heads = comp==='all' ? ['Asta i → j','L [b]','N(s) [F]','T(s) [F]','M(s) [Fb]'] :
+        ['Asta i → j','L [b]',comp+'(s) ['+units+']',comp+'(0)',comp+'(L)','Estremo interno'];
       body = `<div class="result-bar">${stateSelect}<div class="seg" aria-label="Azione interna">${controls}</div></div>
         <div class="${comp==='all'?'diagram-sheet':'result-grid'}">${plots}<div class="diagram-notes">${card}
-        <p class="subtext">${esc(stageInfo)}</p><label class="check"><input id="show-loads" type="checkbox" ${ui.showLoads?'checked':''}> Mostra i carichi sullo schema</label>
+        <p class="subtext">${name(stageInfo)}</p><label class="check"><input id="show-loads" type="checkbox" ${ui.showLoads?'checked':''}> Mostra i carichi sullo schema</label>
         <p class="help">Le ordinate positive sono disegnate sul lato tratteggiato. Nel diagramma M la curva si trova sul lato delle fibre tese per flessione.</p></div></div>
         <details ${comp==='all'?'':'open'}><summary>Equazioni e valori per asta</summary>${table(heads,sections)}</details>
       <details><summary>Reazioni vincolari</summary>${
@@ -150,7 +147,7 @@ const Report = (() => {
               table(['Componente', 'Valore', 'Unità'], reactions) :
               '<p>Corpo libero in equilibrio.</p>'}</details><p class="subtext">${coordinate}</p>`;
     } else if (ui.tab === 3) {
-      const h=ExamSection.atH(r.final.fields[sectionIndex]);
+      const h=ExamSection.atH(r.final.fields[sectionIndex], model.ref);
       body='<h3>Sezione H sul lato di F</h3><p>Le azioni provengono dal diagramma finale di HF, in s = 0. La sezione è simmetrica rispetto all’asse verticale. La quota y si misura dal lembo inferiore.</p>'+
         table(['Strato','Intervallo y [mm]','Larghezza [mm]'],[['Ala inferiore','0–14','21'],['Anima','14–50','7'],['Ala superiore','50–63','49']])+
         '<div class="formula">N = '+fmt(h.n)+' N · T = '+fmt(h.t)+' N · M = '+fmt(h.m)+' N·mm<br>A = '+fmt(h.area)+' mm² · yG = '+fmt(h.centroid)+' mm · Jx = '+fmt(h.inertia)+' mm⁴<br>S* = '+fmt(h.firstMoment)+' mm³ · spessore in * = 7 mm</div>'+
@@ -160,7 +157,7 @@ const Report = (() => {
           ['τ nel punto *','T S*/(7 Jx)',fmt(h.shear)],
           ['von Mises nel punto *','√(σ² + 3τ²)',fmt(h.vonMises)]]);
     } else if (ui.tab === 1) {
-      body = `<h3>Equilibrio ai nodi</h3><p>Per ogni nodo si impongono ΣFₓ = 0, ΣFᵧ = 0 e, se trasmette coppie, ΣM = 0. Le incognite d’asta sono N(0), M(0) e M(L). Agli estremi incernierati il momento vale zero.</p>
+      body = `<h3>Equilibrio ai nodi</h3><p>Per ogni nodo si impongono ΣFₓ = 0, ΣFᵧ = 0 e, se trasmette coppie, ΣM = 0. Le incognite d’asta sono lo sforzo normale N<sub>AB</sub> = N(0) e le coppie di estremità W<sub>AB</sub> = −M(0) e W<sub>BA</sub> = M(L), positive se antiorarie sull’asta. Agli estremi incernierati il momento vale zero.</p>
       <div class="formula">N(s) = N(0) − qₓ s<br>T(0) = [M(L) − M(0)] / L − qᵧ L / 2<br>T(s) = T(0) + qᵧ s<br>M(s) = M(0) + T(0) s + qᵧ s² / 2</div>
       <p class="subtext">qₓ e qᵧ sono le componenti del carico distribuito negli assi locali dell’asta. Per l’equilibrio si usa il momento locale positivo con fibre tese a destra nel verso i → j. Le azioni di estremità sull’asta sono [−N(0), T(0), −M(0)] in i e [N(L), −T(L), M(L)] in j.</p>
       <h3>Sistema assemblato</h3><p>${r.rowLabels.length} equazioni indipendenti e ${
@@ -189,7 +186,7 @@ const Report = (() => {
       const formulas = unknowns
                            .map(
                                (d, i) => `<div class="result-card"><strong>${xi(i)} = ${
-                                   esc(d.label)}</strong><p>${esc(release(d, model))} Nel servizio ${
+                                   name(d.label)}</strong><p>${esc(release(d, model))} Nel servizio ${
                                    i + 1} assegna +1 ${d.unit} alla coordinata rilasciata.</p></div>`)
                            .join('');
       const terms =
@@ -250,9 +247,8 @@ const Report = (() => {
       overlay.onchange = () => onChange({showLoads: overlay.checked});
     if (ui.tab===0) for (const component of shown) {
       const plot=host.querySelector('#result-plot-'+component);
-      const ordinateUnit=relative ? (component==='M' ? Models.reference.W : Models.reference.F) : 0;
       Draft.draw(plot,model,Draft.viewport(model.nodes,Math.max(220,plot.clientWidth),plot.clientHeight||300),
-        {result:r,state,component,showLoads:ui.showLoads,decimals:ui.decimals,ordinateUnit,reduced:ui.stage!=='final'});
+        {result:r,state,component,showLoads:ui.showLoads,decimals:ui.decimals,reduced:ui.stage!=='final'});
     }
   }
   return {render};

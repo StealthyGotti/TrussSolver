@@ -1,4 +1,4 @@
-/* Plane frames by the force method. All element forces use one i → j axis. */
+/* Plane frames by the force method, in units of F, b and EJ. All element forces use one i → j axis. */
 const Mechanics = (() => {
   const zeros = n => Array(n).fill(0);
   const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -6,8 +6,8 @@ const Mechanics = (() => {
     throw new Error(message);
   };
   const supportAxes = {free: [], pin: [0, 1], rollerY: [1], rollerX: [0], fixed: [0, 1, 2]};
-  const axis = ['H', 'V', 'C'];
-  const unit = ['kN', 'kN', 'kN·m'];
+  const axis = ['H', 'V', 'W'];
+  const unit = ['F', 'F', 'Fb'];
   function geometry(model) {
     const {nodes, members} = model;
     if (!Array.isArray(nodes) || !Array.isArray(members) || !members.length)
@@ -113,16 +113,17 @@ const Mechanics = (() => {
     };
     for (const [k, e] of elements.entries()) {
       const {i, j, c, s, L} = e;
-      const member = (kind, label, terms) => entry(
-          {kind, k, id: e.key + '/' + kind, label: label + ' ' + e.name, unit: kind === 'n' ? 'kN' : 'kN·m'},
-          terms);
-      member('n', 'N', [[3 * i, -c], [3 * i + 1, -s], [3 * j, c], [3 * j + 1, s]]);
+      // W_ab is the couple that the node applies to end a of member ab, positive counter-clockwise.
+      // It equals −M(0) at the first end and +M(L) at the second one.
+      const member = (kind, label, terms) =>
+          entry({kind, k, id: e.key + '/' + kind, label, unit: kind === 'n' ? 'F' : 'Fb'}, terms);
+      member('n', 'N_' + e.a + e.b, [[3 * i, -c], [3 * i + 1, -s], [3 * j, c], [3 * j + 1, s]]);
       if (e.type === 'beam') {
         const moments = [[3 * i, s / L], [3 * i + 1, -c / L], [3 * j, -s / L], [3 * j + 1, c / L]];
         if (!e.hi)
-          member('mi', 'Mᵢ', [...moments, [3 * i + 2, -1]]);
+          member('mi', 'W_' + e.a + e.b, [...moments, [3 * i + 2, -1]].map(([r, v]) => [r, -v]));
         if (!e.hj)
-          member('mj', 'Mⱼ', [...moments.map(([r, v]) => [r, -v]), [3 * j + 2, 1]]);
+          member('mj', 'W_' + e.b + e.a, [...moments.map(([r, v]) => [r, -v]), [3 * j + 2, 1]]);
       }
       // Known end actions for zero basic forces, under a uniform global load.
       const px = c * e.qx + s * e.qy, py = -s * e.qx + c * e.qy;
@@ -196,7 +197,7 @@ const Mechanics = (() => {
       const end = elements.map(() => ({n: 0, mi: 0, mj: 0}));
       descriptors.forEach((d, j) => {
         if (d.kind !== 'r')
-          end[d.k][d.kind] = vector[j];
+          end[d.k][d.kind] = d.kind === 'mi' ? -vector[j] : vector[j];
       });
       return {vector, end, fields: elements.map((e, k) => field(e, end[k], real))};
     }

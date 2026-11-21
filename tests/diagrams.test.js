@@ -23,7 +23,7 @@ function envelope(svg) {
 }
 function loadedBeam() {
   return {nodes:[Models.node('A',0,0,'pin'), Models.node('B',6,0,'rollerY',{fx:2})],
-          members:[Models.beam('A','B',{qy:-12})], axial:true};
+          members:[Models.beam('A','B',{qy:-12, ei:20000, ea:200000})], axial:true};
 }
 
 test('Cambio del tratteggio dopo il calcolo: M cambia segno e conserva la curva fisica', () => {
@@ -51,19 +51,23 @@ test('Il lato delle ordinate N e T segue il riferimento, i segni N e T rimangono
   }
 });
 
-test('Tratteggi e quote del primo tema, orientati rispetto ai due montanti', () => {
+test('Tratteggi e quote del primo tema: sotto le aste orizzontali e a ovest dei montanti', () => {
   const model=Models.examples[0], r=Mechanics.solve(model);
   for (const [k,e] of model.members.entries()) {
     const a=model.nodes.find(n=>n.id===e.a), b=model.nodes.find(n=>n.id===e.b);
-    const sign=e.fiberSide==='left'?-1:1;
-    if (b.y===a.y) assert.ok(-(b.x-a.x)*sign < 0); // below the horizontal member
-    else assert.ok((b.y-a.y)*sign < 0);             // west of the vertical member
-    if(e.a==='E' && e.b==='A') {
+    assert.equal(e.fiberSide,'right');
+    if (b.y===a.y) assert.ok(b.x>a.x); // right of an eastward member is below it
+    else assert.ok(b.y<a.y);            // right of a southward member is west of it
+    if(e.a==='A' && e.b==='E') {
       const field=draft.diagramField(e,r.final.fields[k],'M');
-      const value=Mechanics.evaluate(field,r.elements[k].L)/Models.reference.W;
-      assert.equal(draft.fraction(value),'13/16');
+      assert.equal(draft.fraction(Mechanics.evaluate(field,0)),'13/16');
     }
   }
+  const svg=draw(model,r,r.final,'N');
+  assert.match(svg,/>57\/16</);
+  assert.match(svg,/>N \[F\]</);
+  assert.match(draw(model),/>7q</);
+  assert.match(draw(model),/>2b</);
 });
 
 test('Gli schemi di risultato omettono griglia, simboli di vincolo e marcatori dei nodi', () => {

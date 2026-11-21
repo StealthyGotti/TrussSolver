@@ -25,7 +25,7 @@
   document.querySelectorAll('[data-icon]').forEach(i => i.outerHTML = icon(i.dataset.icon));
   const clone = o => JSON.parse(JSON.stringify(o));
   let model = clone(Models.examples[0]), result = null, problem = '', selection = '', tool = 'select',
-      first = '', view, step = Models.reference.b / 2, history = [], ui = {tab: 0, stage: 'final', comp: 'all', decimals: false};
+      first = '', view, step = Models.examples[0].grid, history = [], ui = {tab: 0, stage: 'final', comp: 'all', decimals: false};
   const fmt = value => ui.decimals ? NumericDisplay.decimal(value) : NumericDisplay.fraction(value);
   let pointer = null;
   let fitNeeded = true;
@@ -66,7 +66,7 @@
   function load(m) {
     remember();
     model = clone(m);
-    step = model.exercise === 'tema-1' ? Models.reference.b / 2 : .5;
+    step = model.grid || .5;
     selection = '';
     first = '';
     tool = 'select';
@@ -105,14 +105,14 @@
     const items = [['', 'Automatica']];
     for (const n of model.nodes)
       Mechanics.supportAxes[n.support].forEach(
-          d => items.push(['r/' + n.id + '/' + d, ['H', 'V', 'C'][d] + ' · nodo ' + n.id]));
+          d => items.push(['r/' + n.id + '/' + d, ['H', 'V', 'W'][d] + '_' + n.id + ' · reazione in ' + n.id]));
     for (const e of model.members) {
       const id = e.a + '/' + e.b + '/', tag = e.a + '–' + e.b;
-      items.push([id + 'n', 'N · ' + tag]);
+      items.push([id + 'n', 'N_' + e.a + e.b + ' · sforzo normale di ' + tag]);
       if (e.type === 'beam' && !e.hi)
-        items.push([id + 'mi', 'M in ' + e.a + ' · ' + tag]);
+        items.push([id + 'mi', 'W_' + e.a + e.b + ' · coppia in ' + e.a + ' su ' + tag]);
       if (e.type === 'beam' && !e.hj)
-        items.push([id + 'mj', 'M in ' + e.b + ' · ' + tag]);
+        items.push([id + 'mj', 'W_' + e.b + e.a + ' · coppia in ' + e.b + ' su ' + tag]);
     }
     return items;
   }
@@ -125,11 +125,11 @@
     let html = '<label class="cap" for="object">Selezione</label><select class="object" id="object">' +
         options(choices, selection) + '</select>';
     if (isNode) {
-      html += '<span class="cap">Geometria</span><div class="props">' + field('x', 'x [m]', o.x) +
-          field('y', 'y [m]', o.y) + '</div><span class="cap">Vincolo esterno</span>' +
+      html += '<span class="cap">Geometria</span><div class="props">' + field('x', 'x [b]', o.x) +
+          field('y', 'y [b]', o.y) + '</div><span class="cap">Vincolo esterno</span>' +
           select('support', 'Tipo di appoggio', Object.entries(supports), o.support) +
-          '<span class="cap">Carichi nodali</span><div class="props">' + field('fx', 'Fₓ [kN]', o.fx) +
-          field('fy', 'Fᵧ [kN]', o.fy) + field('m', 'Coppia ↺ [kN·m]', o.m) + '</div>';
+          '<span class="cap">Carichi nodali</span><div class="props">' + field('fx', 'H [F]', o.fx) +
+          field('fy', 'V [F]', o.fy) + field('m', 'Coppia W ↺ [Fb]', o.m) + '</div>';
     } else if (isEdge) {
       html += '<span class="cap">Elemento</span>' +
           select('type', 'Tipo', [['beam', 'Trave'], ['bar', 'Biella']], o.type);
@@ -139,32 +139,29 @@
       if (o.type === 'beam')
         html += check('hi', 'Cerniera in ' + esc(o.a), o.hi) + check('hj', 'Cerniera in ' + esc(o.b), o.hj) +
             '<span class="cap">Carico uniforme · assi globali</span><div class="props">' +
-            field('qx', 'qₓ [kN/m]', o.qx) + field('qy', 'qᵧ [kN/m]', o.qy) + '</div>';
+            field('qx', 'p lungo x [F/b]', o.qx) + field('qy', 'q lungo y [F/b]', o.qy) + '</div>';
       if (o.type === 'beam' && !(o.hi && o.hj))
         html +=
-            '<details><summary>Molle rotazionali agli estremi</summary><p class="help">Rigidezza tra asta e nodo in kN·m/rad. Il valore 0 mantiene il collegamento rigido.</p><div class="props">' +
+            '<details><summary>Molle rotazionali agli estremi</summary><p class="help">Rigidezza tra asta e nodo in EJ/b. Il valore 0 mantiene il collegamento rigido.</p><div class="props">' +
             (o.hi ? '' : field('springI', 'k in ' + esc(o.a), o.springI || 0)) +
             (o.hj ? '' : field('springJ', 'k in ' + esc(o.b), o.springJ || 0)) +
             '</div></details>';
       html += '<span class="cap">Rigidezza</span><div class="props">' +
-          (o.type === 'beam' ? field('ei', 'EJ [kN·m²]', o.ei) : '') +
-          field('ea', 'EA [kN]', o.ea) +
+          (o.type === 'beam' ? field('ei', 'Rigidezza [EJ]', o.ei) : '') +
+          field('ea', 'EA [EJ/b²]', o.ea) +
           '</div><details><summary>Deformazioni impresse</summary><div class="props">' +
-          field('eps', 'ε₀ [m/m]', o.eps) + (o.type === 'beam' ? field('kappa', 'κ₀ [1/m]', o.kappa) : '') +
+          field('eps', 'ε [Fb²/EJ]', o.eps) + (o.type === 'beam' ? field('kappa', 'θ [Fb/EJ]', o.kappa) : '') +
           '</div></details>';
     } else {
       const restraint = model.nodes.filter(n => n.support !== 'free').length;
-      if (model.exercise === 'tema-1') {
-        html += `<span class="cap">Riferimenti della traccia</span><p class="subtext">b = ${fmt(Models.reference.b * 1000)} mm · F = ${fmt(Models.reference.F)} kN<br>q = F/b · W = Fb<br>EJ di riferimento = ${fmt(Models.reference.EJ)} kN·m²</p>`;
-      }
       html +=
           `<div class="setting"><span>Schema</span><strong>Telaio piano</strong></div><div class="setting"><span>Vincoli esterni</span><strong>${
-              restraint}</strong></div><div class="setting"><span>Unità</span><strong>kN · m</strong></div><span class="cap">Metodo delle forze</span>` +
+              restraint}</strong></div><div class="setting"><span>Unità</span><strong>F · b · EJ</strong></div><span class="cap">Metodo delle forze</span>` +
           select('release', 'Incognita da rilasciare', releaseList(), model.release) +
           check('axial', 'Includi la deformabilità assiale', model.axial) +
           `<details class="model-opts"><summary>Impostazioni del disegno</summary><div class="props"><label class="span2">Nome del modello<input id="rename" maxlength="70" value="${
-              esc(model.title)}"></label><label>Passo griglia [m]<select id="grid">${
-              options([.1, .24, .25, .5, 1, 2].map(n => [n, fmt(n)]), step)}</select></label></div></details>`;
+              esc(model.title)}"></label><label>Passo griglia [b]<select id="grid">${
+              options([.1, .25, .5, 1, 2].map(n => [n, fmt(n)]), step)}</select></label></div></details>`;
     }
     if (selection)
       html += '<button class="delete" id="remove">Elimina ' + (isNode ? 'nodo' : 'asta') + '</button>';
@@ -234,7 +231,6 @@
     $('#zoom-in').disabled = view.scale >= view.fitScale * 32;
   }
   function board() {
-    $('#canvas').classList.toggle('exam-drawing',model.exercise==='tema-1');
     const svg = $('#canvas'), width = Math.max(300, svg.clientWidth), height = svg.clientHeight;
     if (fitNeeded || !view) {
       view = Draft.viewport(model.nodes, width, height);
@@ -248,7 +244,7 @@
       view.height = height;
     }
     svg.classList.toggle('hand-tool', tool === 'pan');
-    $('#step-label').textContent = fmt(step) + ' m';
+    $('#step-label').textContent = fmt(step) + ' b';
     paintCanvas();
     $('#tools').innerHTML =
         Object.entries(names)
@@ -311,7 +307,7 @@
   $('#canvas').onpointermove = e => {
     pointer = world(e);
     const [x, y] = pointer;
-    $('#pointer-pos').textContent = 'x ' + fmt(x) + ' · y ' + fmt(y) + ' m';
+    $('#pointer-pos').textContent = 'x ' + fmt(x) + ' · y ' + fmt(y) + ' b';
   };
   $('#canvas').onclick = e => {
     if (tool === 'pan') return;
@@ -365,7 +361,7 @@
     const open = Array.from(document.querySelectorAll('details'), d => d.open);
     render();
     document.querySelectorAll('details').forEach((d, i) => { d.open = open[i]; });
-    if (pointer) $('#pointer-pos').textContent = 'x ' + fmt(pointer[0]) + ' · y ' + fmt(pointer[1]) + ' m';
+    if (pointer) $('#pointer-pos').textContent = 'x ' + fmt(pointer[0]) + ' · y ' + fmt(pointer[1]) + ' b';
   };
   $('#zoom-in').onclick = () => navigation.zoom(1.25);
   $('#zoom-out').onclick = () => navigation.zoom(1 / 1.25);
@@ -385,7 +381,7 @@
     if (v === '')
       return;
     load(
-        v === 'new' ? {title: 'Nuova struttura', nodes: [], members: [], release: '', axial: false} :
+        v === 'new' ? {title: 'Nuova struttura', ref: {b: 1000, F: 1000}, nodes: [], members: [], release: '', axial: false} :
                       Models.examples[+v]);
     if (v === 'new') {
       resetResult();
@@ -396,7 +392,7 @@
   };
   $('#save').onclick = () => {
     const url = URL.createObjectURL(
-        new Blob([JSON.stringify({version: 1, model}, null, 2)], {type: 'application/json'}));
+        new Blob([JSON.stringify({version: 2, model: {...model, grid: step}}, null, 2)], {type: 'application/json'}));
     const a = document.createElement('a');
     a.href = url;
     a.download = (model.title.replace(/[^\p{L}\p{N}_-]/gu, '_') || 'struttura') + '.json';
@@ -412,7 +408,7 @@
       if (f.size > 1000000)
         throw Error();
       const doc = JSON.parse(await f.text()), m = doc.model;
-      if (doc.version !== 1 || !m || typeof m.title !== 'string' || typeof m.axial !== 'boolean' ||
+      if (![1, 2].includes(doc.version) || !m || typeof m.title !== 'string' || typeof m.axial !== 'boolean' ||
           typeof m.release !== 'string' || !Array.isArray(m.nodes) || !Array.isArray(m.members) ||
           m.nodes.length > 120 || m.members.length > 200)
         throw Error();
@@ -429,12 +425,16 @@
             ![a.ei, a.ea, a.qx, a.qy, a.eps, a.kappa].every(Number.isFinite))
           throw Error();
       for (const a of m.members) {
-        if (a.fiberSide === undefined) {
-          const ref = m.exercise === 'tema-1' && Models.examples[0].members.find(e=>e.a===a.a && e.b===a.b);
-          a.fiberSide = ref ? ref.fiberSide : 'right';
-        }
+        if (a.fiberSide === undefined) a.fiberSide = 'right';
         if (!['left','right'].includes(a.fiberSide)) throw Error();
       }
+      // Version 1 files were written in kN and m: read them with F = 1 kN, b = 1 m and EJ = 1 kN·m².
+      if (doc.version === 1) {
+        delete m.exercise;
+        m.ref = {b: 1000, F: 1000};
+      }
+      if (m.ref !== undefined && !(m.ref && [m.ref.b, m.ref.F].every(v => Number.isFinite(v) && v > 0))) throw Error();
+      if (m.grid !== undefined && !(Number.isFinite(m.grid) && m.grid > 0)) throw Error();
       load(m);
     } catch {
       $('#hint').textContent =

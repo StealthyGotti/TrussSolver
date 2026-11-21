@@ -1,6 +1,9 @@
+// Models are written in the units of the exam sheets: lengths in b, forces in F,
+// couples in W = Fb, distributed loads in q = F/b and stiffnesses in EJ.
 const Models = (() => {
   const node = (id, x, y, support = 'free', loads = {}) =>
       ({id, x, y, support, fx: 0, fy: 0, m: 0, ...loads});
+  // An a → b member is named ab on the sheets. Its dashed side is on the right of that direction.
   const beam = (a, b, data = {}) => ({
     a,
     b,
@@ -8,34 +11,34 @@ const Models = (() => {
     fiberSide: 'right',
     hi: false,
     hj: false,
-    ea: 200000,
-    ei: 20000,
+    ea: 1000,
+    ei: 1,
     qx: 0,
     qy: 0,
     eps: 0,
     kappa: 0,
     ...data
   });
-  const b = 0.48, F = 1.5, EJ = 1000;
-  const q = F / b, W = F * b;
   const firstExam = {
     title: 'Tema 1 · Telaio con biella AB',
     exercise: 'tema-1',
+    ref: {b: 480, F: 1500},
+    grid: 1 / 2,
     axial: false,
-    // At the j end of E → A the nodal moment on the member is +M(L) = W_AE.
-    release: 'E/A/mj',
+    // W_AE, the couple that node A applies to the end A of member AE.
+    release: 'A/E/mi',
     nodes: [
-      node('E', 0, 0, 'free', {fx: 2 * F}), node('F', 2 * b, 0), node('A', 0, 2 * b, 'free', {fx: -3 * F}),
-      node('B', 2 * b, 2 * b), node('C', 0, 4 * b), node('D', b, 4 * b),
-      node('G', 2 * b, 4 * b, 'free', {fx: F}), node('H', b, 0, 'free', {m: 5 * W})
+      node('E', 0, 0, 'free', {fx: 2}), node('F', 2, 0), node('A', 0, 2, 'free', {fx: -3}),
+      node('B', 2, 2), node('C', 0, 4), node('D', 1, 4), node('G', 2, 4, 'free', {fx: 1}),
+      node('H', 1, 0, 'free', {m: 5})
     ],
     members: [
-      beam('A', 'B', {type: 'bar', eps: -b * b * F / EJ}), beam('C', 'D', {hj: true}),
-      beam('E', 'A', {hi: true, fiberSide: 'left'}), beam('C', 'A'), beam('B', 'F', {hj: true}), beam('G', 'B'), beam('H', 'F'),
-      beam('D', 'G', {qy: -7 * q}), beam('E', 'H', {qy: 7 * q})
-    ].map(e => ({...e, ei: EJ}))
+      beam('A', 'B', {type: 'bar', eps: -1}), beam('C', 'D', {hj: true}), beam('A', 'E', {hj: true}),
+      beam('C', 'A'), beam('B', 'F', {hj: true}), beam('G', 'B'), beam('H', 'F'),
+      beam('D', 'G', {qy: -7}), beam('E', 'H', {qy: 7})
+    ]
   };
-  return {node, beam, reference: {b, F, EJ, q, W}, examples: [firstExam]};
+  return {node, beam, examples: [firstExam]};
 })();
 if (typeof module !== 'undefined')
   module.exports = Models;

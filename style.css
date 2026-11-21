@@ -589,8 +589,8 @@ button:disabled{
   }
 }
 
-.drawing svg.exam-drawing { height: clamp(450px, 39vw, 560px); }
-@media (max-width: 660px) { .drawing svg.exam-drawing { height: 380px; } }
+.drawing svg { height: clamp(430px, 38vw, 560px); }
+@media (max-width: 660px) { .drawing svg { height: 380px; } }
 
 .diagram-sheet {
   display: grid;

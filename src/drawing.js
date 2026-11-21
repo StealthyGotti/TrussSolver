@@ -157,13 +157,8 @@ const Draft = (() => {
     const editable = !state, showLoads = editable || options.showLoads,
           nodes = new Map(model.nodes.map(n => [n.id, n]));
     const at = id => pos(nodes.get(id), view);
-    const exam = model.exercise === 'tema-1';
-    const {F, W, q, b} = Models.reference;
-    function caption(value, base, symbol, unit) {
-      if (!editable || !exam) return fmt(value)+' '+unit;
-      const ratio = value/base;
-      return (ratio===1?'':fmt(ratio)) + symbol;
-    }
+    // Loads are captioned as on the exam sheets: multiples of F, of W = Fb and of q = F/b.
+    const caption = (value, symbol) => (Math.abs(value) === 1 ? '' : fmt(Math.abs(value))) + symbol;
     const centralHinges = new Set(model.nodes.filter(n => {
       if(n.m || n.support!=='free') return false;
       const ends=model.members.filter(e=>e.a===n.id || e.b===n.id);
@@ -229,7 +224,7 @@ const Draft = (() => {
         if (peak && Math.abs(peak[1])>Math.max(Math.abs(start),Math.abs(end))+max*1e-10)
           marks.push([peak[0]/len,peak[1],true]);
         for (const [t,value,isPeak] of marks) {
-          const text=fmt(value / (options.ordinateUnit || 1));
+          const text=fmt(value);
           const inset=Math.min(.35,(7+text.length*3.1)/L);
           const position=Math.max(inset,Math.min(1-inset,t));
           const sign=(value < -max*1e-10 ? 1 : -1)*(isPeak ? -1 : 1);
@@ -242,7 +237,7 @@ const Draft = (() => {
         members += line(x, y, u, v, '#a4d8c8', 8);
       members += line(x, y, u, v, editable ? ink : '#191c19', editable ? (e.type==='bar'?2:3.3) : 1.8);
       if (showLoads && realLoads)
-        symbols += distributed(x, y, u, v, e.qx, e.qy, caption(Math.hypot(e.qx,e.qy),q,'q','kN/m'));
+        symbols += distributed(x, y, u, v, e.qx, e.qy, caption(Math.hypot(e.qx,e.qy),'q'));
       if (showLoads && realLoads && e.type==='bar' && e.eps)
         symbols += path('M -4 -4 h 8 v 8 h -8 Z',green,'none',1,
           `transform="translate(${(x+u)/2} ${(y+v)/2})"`);
@@ -277,15 +272,15 @@ const Draft = (() => {
           d => !rel.some(a => a.kind === 'r' && a.k === i && a.d === d));
       if (editable) symbols += support(x, y, axes);
       if (showLoads && realLoads) {
-        symbols += pointLoad(x, y, n.fx, 0, caption(Math.abs(n.fx), F, 'F', 'kN'), (x-w/2)*n.fx>0) +
-            pointLoad(x, y, 0, n.fy, caption(Math.abs(n.fy), F, 'F', 'kN'));
+        symbols += pointLoad(x, y, n.fx, 0, caption(n.fx, 'F'), (x-w/2)*n.fx>0) +
+            pointLoad(x, y, 0, n.fy, caption(n.fy, 'F'));
         if (n.m)
-          symbols += couple(x, y, n.m, caption(n.m,W,'W','kN·m'));
+          symbols += couple(x, y, n.m, caption(n.m,'W'));
       }
       if (showLoads && unitLoad?.kind === 'r' && unitLoad.k === i) {
         symbols += unitLoad.d === 2 ?
             couple(x, y, 1) :
-            pointLoad(x, y, unitLoad.d === 0 ? 1 : 0, unitLoad.d === 1 ? 1 : 0, '1 kN');
+            pointLoad(x, y, unitLoad.d === 0 ? 1 : 0, unitLoad.d === 1 ? 1 : 0, 'X=1');
       }
       if (!editable) return;
       if (chosen)
@@ -296,16 +291,24 @@ const Draft = (() => {
           `<circle cx="${x}" cy="${y}" r="11" fill="transparent" data-node="${i}" style="cursor:pointer"/>`;
     });
     if (!editable) labels+=diagramLabels(numbers,w,h);
-    if (editable && exam && Models.examples[0].nodes.every(ref => {
-      const n=nodes.get(ref.id);
-      return n && n.x===ref.x && n.y===ref.y;
-    })) {
-      const [x,y]=at('E'),half=b*view.scale, left=x-58, bottom=y+44;
-      labels+=line(x,bottom,x+2*half,bottom,faint,1)+line(left,y,left,y-4*half,faint,1);
-      for (let k=0;k<=2;k++) {
-        labels+=line(x+k*half,bottom-3,x+k*half,bottom+3,faint,1);
-        labels+=line(left-3,y-k*2*half,left+3,y-k*2*half,faint,1);
-        if(k<2) labels+=label(x+(k+.5)*half,bottom+12,'b',ink,10)+label(left-6,y-(2*k+1)*half+4,'2b',ink,10,'end');
+    if (editable && model.nodes.length > 1) {
+      // Dimension chains along both axes, in multiples of b.
+      const levels = key => [...new Set(model.nodes.map(n => Number(n[key].toFixed(9))))].sort((p, q) => p - q);
+      const xs = levels('x'), ys = levels('y');
+      const quote = value => (Math.abs(value - 1) < 1e-9 ? '' : fmt(value)) + 'b';
+      if (xs.length <= 9 && ys.length <= 9) {
+        const bottom = view.oy - ys[0] * view.scale + 50, left = view.ox + xs[0] * view.scale - 58;
+        const px = v => view.ox + v * view.scale, py = v => view.oy - v * view.scale;
+        if (xs.length > 1) labels += line(px(xs[0]), bottom, px(xs.at(-1)), bottom, faint, 1);
+        if (ys.length > 1) labels += line(left, py(ys[0]), left, py(ys.at(-1)), faint, 1);
+        xs.forEach((v, k) => {
+          if (xs.length > 1) labels += line(px(v), bottom - 3, px(v), bottom + 3, faint, 1);
+          if (k) labels += label((px(v) + px(xs[k - 1])) / 2, bottom + 13, quote(v - xs[k - 1]), ink, 10);
+        });
+        ys.forEach((v, k) => {
+          if (ys.length > 1) labels += line(left - 3, py(v), left + 3, py(v), faint, 1);
+          if (k) labels += label(left - 6, (py(v) + py(ys[k - 1])) / 2 + 4, quote(v - ys[k - 1]), ink, 10, 'end');
+        });
       }
     }
     out += fills + fibres + members + symbols + labels + (editable ? hits : '');
@@ -314,8 +317,7 @@ const Draft = (() => {
           label(52, h - 45, 'x', faint, 10) + label(21, h - 76, 'y', faint, 10);
     }
     if (!editable) {
-      const unit=options.ordinateUnit ? (component==='M'?'Fb':'F') : (component==='M'?'kN·m':'kN');
-      out+=signLegend(component,unit,h);
+      out+=signLegend(component,component==='M'?'Fb':'F',h);
     }
     svg.innerHTML = out;
   }

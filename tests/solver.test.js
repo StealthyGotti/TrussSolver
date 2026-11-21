@@ -1,15 +1,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {solve, evaluate} = require('../src/solver');
-const {node, beam, examples, reference: {F, b, W, EJ}} = require('../src/examples');
+const {node, beam, examples} = require('../src/examples');
 const copy = model => structuredClone(model);
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-8 * Math.max(1, Math.abs(b)), `${a} ≠ ${b}`);
 const value = (r, id) => r.final.vector[r.descriptors.findIndex(d => d.id === id)];
 const exam = examples[0];
+const member = (r, key) => r.elements.findIndex(e => e.key === key);
+const moment = (r, key, s) => evaluate(r.final.fields[member(r, key)].M, s);
 // Analytical fixtures for the solver, independent of the model menu.
 function loadedBeam(leftSupport) {
   return {nodes: [node('A',0,0,leftSupport),node('B',6,0,'rollerY')],
-    members: [beam('A','B',{qy:-12})], axial:false, release:''};
+    members: [beam('A','B',{qy:-12, ei: 20000, ea: 200000})], axial:false, release:''};
 }
 test('Trave appoggiata, reazioni e parabola sotto carico uniforme', () => {
   const r = solve(loadedBeam('pin')), f = r.final.fields[0];
@@ -28,20 +30,23 @@ test('Mensola puntellata, integrali e sovrapposizione', () => {
   near(r.X[0], 3 * q * L / 8);
   near(evaluate(r.primary.fields[0].M, 0), -q * L ** 2 / 2);
   near(evaluate(r.service[0].fields[0].M, 0), L);
+  assert.equal(r.descriptors[r.free[0]].label, 'V_B');
   near(evaluate(r.final.fields[0].M, 0), -q * L ** 2 / 8);
 });
 test('Telaio libero con deformazione impressa, primo tema', () => {
   const r = solve(exam);
   assert.equal(r.floating, true);
   assert.equal(r.X.length, 1);
-  assert.equal(examples.length, 1);
-  near(r.X[0], -13 * W / 16);
-  near(value(r, 'A/B/n'), 57 * F / 16);
-  near(value(r, 'C/D/n'), -31 * F / 32);
-  near(value(r, 'B/F/mi'), 51 * W / 16);
-  near(r.flexibility[0][0], 8*b/(3*EJ));
-  near(r.delta[0], 13*F*b*b/(6*EJ));
-  near(r.work0[0][0].imposed, -2*F*b*b/EJ);
+  assert.equal(r.descriptors[r.free[0]].label, 'W_AE');
+  near(r.X[0], -13 / 16);
+  near(value(r, 'A/B/n'), 57 / 16);
+  near(value(r, 'C/D/n'), -31 / 32);
+  near(moment(r, 'B/F', 0), 51 / 16);
+  near(moment(r, 'A/E', 0), 13 / 16);
+  near(moment(r, 'C/A', 2), 13 / 16);
+  near(r.flexibility[0][0], 8 / 3);
+  near(r.delta[0], 13 / 6);
+  near(r.work0[0][0].imposed, -2);
   for (const [i, d] of r.descriptors.entries())
     if (d.artificial)
       near(r.final.vector[i], 0);
@@ -50,7 +55,7 @@ test('Il cambio di rilascio modifica il servizio e conserva la soluzione finale'
   const m = copy(exam), r = solve(m);
   m.release = 'A/B/n';
   const other = solve(m);
-  near(other.X[0], 57 * F / 16);
+  near(other.X[0], 57 / 16);
   for (const d of r.descriptors)
     near(value(other, d.id), value(r, d.id));
 });
@@ -85,7 +90,7 @@ test('Trave doppiamente incastrata, tre compatibilità accoppiate', () => {
 test('Asta inclinata con carichi distribuiti globali', () => {
   const m = {
     nodes: [node('A', 0, 0, 'fixed'), node('B', 3, 4)],
-    members: [beam('A', 'B', {qx: 2, qy: -3})],
+    members: [beam('A', 'B', {qx: 2, qy: -3, ea: 200000})],
     axial: true
   };
   const r = solve(m);
@@ -135,7 +140,7 @@ test('Mensola puntellata con molla rotazionale al piede', () => {
 });
 test('Sezione H dal campo finale, confronto con i risultati del tema', () => {
   const {atH}=require('../src/section');
-  const r=solve(exam), h=atH(r.final.fields[r.elements.findIndex(e=>e.a==='H' && e.b==='F')]);
+  const r=solve(exam), h=atH(r.final.fields[r.elements.findIndex(e=>e.a==='H' && e.b==='F')], exam.ref);
   near(h.n,-2390.625); near(h.t,6375); near(h.m,-3060000); near(h.area,1183);
   assert.equal(Math.round(h.inertia),549474); assert.equal(Math.round(h.firstMoment),9573);
   assert.equal(h.maxStress.toFixed(1),'-219.1'); assert.equal(h.stress.toFixed(1),'-135.6');
