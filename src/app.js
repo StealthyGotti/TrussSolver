@@ -355,6 +355,8 @@
           '</div>';
   }
   function render() {
+    // Irrational member lengths, such as √5 b, tell which roots may appear in the results.
+    NumericDisplay.learn(model);
     $('#model-name').textContent = model.title;
     board();
     inspector();
