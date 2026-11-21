@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TrussSolver · Banco di calcolo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="brand"><svg viewBox="0 0 42 36" width="38" height="34" aria-hidden="true"><path d="M4 29 18 5l19 24H4l20-10" fill="none" stroke="#00806f" stroke-width="3"/><g fill="#00806f"><circle cx="4" cy="29" r="3.3"/><circle cx="18" cy="5" r="3.3"/><circle cx="37" cy="29" r="3.3"/></g></svg>Truss<span>Solver</span></div><i class="divider"></i><span class="head-sub">Analisi strutturale 2D</span><div class="head-actions"><button id="open"><i data-icon="folder"></i> Apri</button><button id="save"><i data-icon="save"></i> Salva</button></div><input hidden type="file" id="file" accept=".json,application/json"></header>
+<main>
+<section class="project"><div><div class="overline"><b></b> MODELLO ATTIVO</div><h1 id="model-name"></h1></div><div class="project-actions"><label class="picker"><i data-icon="layers"></i><select id="example" aria-label="Riapri il primo tema o crea un disegno"></select></label><button class="primary" id="solve"><i data-icon="play"></i> Calcola</button></div></section>
+<div class="workbench">
+<section class="panel board"><div class="panel-head"><h2><i data-icon="draft"></i> Tavola di disegno</h2><span id="counts" class="mono counts"></span></div>
+<div class="board-tools">
+  <div id="tools" class="tool-group"></div>
+  <div class="view-tools" role="group" aria-label="Inquadratura della tavola">
+    <button id="zoom-out" title="Riduci lo zoom" aria-label="Riduci lo zoom"><i data-icon="zoomOut"></i></button>
+    <span id="zoom-level" aria-label="Livello di zoom">100%</span>
+    <button id="zoom-in" title="Aumenta lo zoom" aria-label="Aumenta lo zoom"><i data-icon="zoomIn"></i></button>
+    <button id="fit" title="Inquadra tutta la struttura" aria-label="Inquadra tutta la struttura"><i data-icon="fit"></i></button>
+  </div>
+</div>
+<div class="drawing"><svg id="canvas" viewBox="0 0 820 380" aria-label="Editor grafico della struttura piana"></svg><div class="drawing-foot"><span><b class="grid-dot"></b> Griglia <strong id="step-label">0,5 m</strong></span><span id="pointer-pos"></span></div></div>
+<div class="hint" id="hint" aria-live="polite"></div></section>
+<aside class="panel inspector"><div class="panel-head"><h2><i data-icon="sliders"></i> Proprietà</h2></div><div id="inspector"></div></aside>
+</div>
+<section class="panel analysis"><div class="panel-head"><h2><i data-icon="wave"></i> Analisi strutturale</h2><span id="status" role="status"></span></div><div id="analysis"></div></section>
+</main><script src="src/solver.js"></script><script src="src/examples.js"></script><script src="src/drawing.js"></script><script src="src/section.js"></script><script src="src/report.js"></script><script src="src/navigation.js"></script><script src="src/app.js"></script>
+</body></html>
