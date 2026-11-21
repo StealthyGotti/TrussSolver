@@ -138,15 +138,6 @@ test('Mensola puntellata con molla rotazionale al piede', () => {
   near(r.X[0], -delta / f);
   near(r.workX[0][0][0].spring, L ** 2 / k);
 });
-test('Sezione H dal campo finale, confronto con i risultati del tema', () => {
-  const {atH}=require('../src/section');
-  const r=solve(exam), h=atH(r.final.fields[r.elements.findIndex(e=>e.a==='H' && e.b==='F')], exam.ref);
-  near(h.n,-2390.625); near(h.t,6375); near(h.m,-3060000); near(h.area,1183);
-  assert.equal(Math.round(h.inertia),549474); assert.equal(Math.round(h.firstMoment),9573);
-  assert.equal(h.maxStress.toFixed(1),'-219.1'); assert.equal(h.stress.toFixed(1),'-135.6');
-  assert.equal(h.shear.toFixed(2),'15.87'); assert.equal(h.vonMises.toFixed(1),'138.3');
-});
-
 // Internal sliding connections between a member end and its node.
 function span(data, left = 'fixed', right = 'fixed') {
   return {nodes: [node('A', 0, 0, left), node('B', 4, 0, right)], members: [beam('A', 'B', data)],

@@ -614,3 +614,27 @@ button:disabled{
 #canvas.hand-tool { touch-action: none; user-select: none; }
 #canvas.hand-tool, #canvas.hand-tool * { cursor: grab !important; }
 #canvas.dragging, #canvas.dragging * { cursor: grabbing !important; }
+
+.inspector textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid #c8d6d1;
+  border-radius: 5px;
+  background: #fff;
+  font: 12px/1.5 var(--mono);
+  color: inherit;
+  resize: vertical;
+}
+.section-sheet {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
+  gap: 16px;
+  margin: 14px 0;
+  align-items: start;
+}
+.section-sheet .plot svg { height: 340px; }
+table.values td { padding: 5px 9px; }
+table.values td:nth-child(2) { color: var(--muted); font-family: inherit; white-space: normal; }
+table.values td:nth-child(3) { text-align: right; font-weight: 600; }
+@media (max-width: 760px) { .section-sheet { grid-template-columns: 1fr; } }

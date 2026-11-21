@@ -1,7 +1,7 @@
 const Report = (() => {
   const {esc} = Draft;
   // W_AB becomes W with subscript AB, as on the exam sheets.
-  const name = text => esc(text).replace(/([A-Za-zδ])_([A-Za-z0-9,]+)/g, '$1<sub>$2</sub>');
+  const name = text => esc(text).replace(/([A-Za-zα-ω])_([A-Za-z0-9,]+)/g, '$1<sub>$2</sub>');
   const table = (heads, rows) => `<div class="scroll"><table><thead><tr>${
       heads.map(x => '<th>' + name(x) + '</th>').join('')}</tr></thead><tbody>${
       rows.map(r => '<tr>' + r.map(x => '<td>' + name(x) + '</td>').join('') + '</tr>')
@@ -64,6 +64,33 @@ const Report = (() => {
                        '') +
         '</div>';
   }
+  // Engineering values of the section check, written with decimals as on the exam sheets.
+  const digits = (value, places) => new Intl.NumberFormat('it-IT', {maximumFractionDigits: places, useGrouping: false})
+      .format(Math.abs(value) < 5 * 10 ** (-places - 1) ? 0 : value);
+  function sectionSheet(model, h, fmt) {
+    const s = model.section, {F, b} = model.ref, c = h.coefficients;
+    const row = (symbol, value, unit, note = '') =>
+        `<tr><td>${name(symbol)}</td><td>${note}</td><td>${value}</td><td>${unit}</td></tr>`;
+    const stress = 'N/A − M<sub>x</sub> v/J<sub>u</sub>';
+    return `<h3>Sezione ${esc(s.at)} della trave ${esc(s.from)}${esc(s.to)}</h3>
+      <p>Azioni interne dal diagramma finale, con b = ${digits(b, 3)} mm e F = ${digits(F, 3)} N. Il lembo inferiore della sezione è sul lato tratteggiato, a destra andando da ${esc(s.from)} a ${esc(s.to)}. La quota y parte dal lembo inferiore, u e v sono gli assi baricentrici.</p>
+      <div class="section-sheet"><div class="plot"><svg id="section-plot" aria-label="Sezione con assi baricentrici ed ellisse d’inerzia"></svg></div>
+      <div class="scroll"><table class="values"><tbody>${
+        row('A', digits(h.area, 1), 'mm²') + row('J_u', digits(h.inertia, 0), 'mm⁴') +
+        row('J_v', digits(h.inertiaV, 0), 'mm⁴') + row('y_g', digits(h.centroid, 2), 'mm') +
+        row('N', digits(h.n, 0), 'N', fmt(c.n) + ' F') + row('T_y', digits(h.t, 0), 'N', fmt(c.t) + ' F') +
+        row('M_x', digits(h.m, 0), 'N·mm', fmt(c.m) + ' Fb') +
+        row('x_m', digits(h.xMax, 2), 'mm') + row('y_m', digits(h.yMax, 2), 'mm') +
+        row('u_m', digits(h.uMax, 2), 'mm') + row('v_m', digits(h.vMax, 2), 'mm') +
+        row('σ_m', digits(h.maxStress, 1), 'N/mm²', stress) +
+        row('x_c', digits(h.xCut, 2), 'mm') + row('y_c', digits(h.cut, 2), 'mm') + row('v_c', digits(h.vCut, 2), 'mm') +
+        row('σ_c', digits(h.stress, 1), 'N/mm²', stress) +
+        row('τ_c', Number(h.shear.toPrecision(4)).toLocaleString('it-IT'), 'N/mm²',
+            '|T<sub>y</sub>| S* / (J<sub>u</sub> · ' + digits(h.web, 2) + ')') +
+        row('σ_o', digits(h.vonMises, 1), 'N/mm²', '√(σ² + 3τ²)') + row('S*', digits(h.firstMoment, 0), 'mm³')
+      }</tbody></table></div></div>
+      <p class="help">σ<sub>m</sub> è la tensione normale di massimo valore assoluto, nel punto di quota y<sub>m</sub>. Nel punto * di quota y<sub>c</sub> si calcolano σ<sub>c</sub>, τ<sub>c</sub> e la tensione di von Mises σ<sub>o</sub>. S* è il momento statico rispetto all’asse u della parte di sezione oltre la corda per *.</p>`;
+  }
   function release(d, model) {
     if (d.kind === 'r')
       return [
@@ -84,8 +111,8 @@ const Report = (() => {
   function render(host, model, r, ui, onChange) {
     const fmt = ui.decimals ? NumericDisplay.decimal : NumericDisplay.fraction;
     const tabs = ['Diagrammi', 'Equilibrio', 'Lavori virtuali'];
-    const sectionIndex = model.exercise === 'tema-1' ? r.elements.findIndex(e=>e.a==='H' && e.b==='F' && e.type==='beam') : -1;
-    if (sectionIndex>=0) tabs.push('Sezione H');
+    const section = CrossSection.evaluate(model, r);
+    if (section) tabs.push('Sezione');
     if (ui.tab>=tabs.length) ui.tab=0;
     const unknowns = r.free.map(j => r.descriptors[j]);
     const xi = i => 'X' + String(i + 1);
@@ -147,15 +174,7 @@ const Report = (() => {
               table(['Componente', 'Valore', 'Unità'], reactions) :
               '<p>Corpo libero in equilibrio.</p>'}</details><p class="subtext">${coordinate}</p>`;
     } else if (ui.tab === 3) {
-      const h=ExamSection.atH(r.final.fields[sectionIndex], model.ref);
-      body='<h3>Sezione H sul lato di F</h3><p>Le azioni provengono dal diagramma finale di HF, in s = 0. La sezione è simmetrica rispetto all’asse verticale. La quota y si misura dal lembo inferiore.</p>'+
-        table(['Strato','Intervallo y [mm]','Larghezza [mm]'],[['Ala inferiore','0–14','21'],['Anima','14–50','7'],['Ala superiore','50–63','49']])+
-        '<div class="formula">N = '+fmt(h.n)+' N · T = '+fmt(h.t)+' N · M = '+fmt(h.m)+' N·mm<br>A = '+fmt(h.area)+' mm² · yG = '+fmt(h.centroid)+' mm · Jx = '+fmt(h.inertia)+' mm⁴<br>S* = '+fmt(h.firstMoment)+' mm³ · spessore in * = 7 mm</div>'+
-        table(['Grandezza','Calcolo','Valore [MPa]'],[
-          ['σ al lembo più sollecitato (y = '+fmt(h.yMax)+' mm)','N/A − M(y − yG)/Jx',fmt(h.maxStress)],
-          ['σ nel punto * (y = 15 mm)','N/A − M(15 − yG)/Jx',fmt(h.stress)],
-          ['τ nel punto *','T S*/(7 Jx)',fmt(h.shear)],
-          ['von Mises nel punto *','√(σ² + 3τ²)',fmt(h.vonMises)]]);
+      body = sectionSheet(model, section, fmt);
     } else if (ui.tab === 1) {
       body = `<h3>Equilibrio ai nodi</h3><p>Per ogni nodo si impongono ΣFₓ = 0, ΣFᵧ = 0 e, se trasmette coppie, ΣM = 0. Le incognite d’asta sono lo sforzo normale N<sub>AB</sub> = N(0) e le coppie di estremità W<sub>AB</sub> = −M(0) e W<sub>BA</sub> = M(L), positive se antiorarie sull’asta. Agli estremi incernierati il momento vale zero.</p>
       <div class="formula">N(s) = N(0) − qₓ s<br>T(0) = [M(L) − M(0)] / L − qᵧ L / 2<br>T(s) = T(0) + qᵧ s<br>M(s) = M(0) + T(0) s + qᵧ s² / 2</div>
@@ -251,6 +270,9 @@ const Report = (() => {
     const overlay = host.querySelector('#show-loads');
     if (overlay)
       overlay.onchange = () => onChange({showLoads: overlay.checked});
+    const sectionPlot = host.querySelector('#section-plot');
+    if (sectionPlot)
+      Draft.section(sectionPlot, model.section, section, sectionPlot.clientWidth || 360, sectionPlot.clientHeight || 330);
     if (ui.tab===0) for (const component of shown) {
       const plot=host.querySelector('#result-plot-'+component);
       Draft.draw(plot,model,Draft.viewport(model.nodes,Math.max(220,plot.clientWidth),plot.clientHeight||300),

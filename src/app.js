@@ -145,6 +145,62 @@
         '</div><p class="help">Spostamento imposto al vincolo, positivo verso destra, verso l’alto o in senso antiorario.</p><div class="props">' +
         axes.map(d => field(moves[d][0], moves[d][1], n[moves[d][0]] || 0)).join('') + '</div></details>';
   }
+  // Section check of the exam sheets: reference values, beam, node, width profile and point *.
+  function sectionDetails() {
+    const s = model.section, ref = model.ref || {b: 1000, F: 1000};
+    const beams = model.members.filter(e => e.type === 'beam');
+    const directions = [['', 'Nessuna verifica'], ...beams.flatMap(e => [[e.a + '/' + e.b, e.a + ' → ' + e.b], [e.b + '/' + e.a, e.b + ' → ' + e.a]])];
+    const text = s ? s.profile.map(p => p.map(v => String(v).replace('.', ',')).join('  ')).join('\n') : '';
+    const plain = value => String(value).replace('.', ',');
+    return `<details class="model-opts"${s ? ' open' : ''}><summary>Sezione e tensioni</summary><div class="props">
+      <label>b [mm]<input id="ref-b" value="${esc(plain(ref.b))}"></label><label>F [N]<input id="ref-F" value="${esc(plain(ref.F))}"></label>
+      <label class="span2">Trave, con il lembo inferiore a destra andando da<select id="section-member">${
+        options(directions, s ? s.from + '/' + s.to : '')}</select></label>${s ? `
+      <label>Sezione nel nodo<select id="section-at">${options([[s.from, s.from], [s.to, s.to]], s.at)}</select></label>
+      <label>Quota del punto * [mm]<input id="section-cut" value="${esc(plain(s.cut))}"></label>
+      <label class="span2">Profilo dal lembo inferiore: quota y e larghezza [mm], un punto per riga<textarea id="section-profile" rows="7" spellcheck="false">${
+        esc(text)}</textarea></label>` : ''}</div>${
+      s ? '<p class="help">La sezione è simmetrica rispetto all’asse verticale. Ripeti la stessa quota per un gradino. Due larghezze diverse a quote diverse danno un tratto inclinato.</p>' : ''}</details>`;
+  }
+  function sectionHandlers() {
+    const invalid = (input, message) => {
+      input.setCustomValidity(message);
+      input.reportValidity();
+      input.oninput = () => input.setCustomValidity('');
+    };
+    for (const key of ['b', 'F']) {
+      const input = $('#ref-' + key);
+      if (input) input.onchange = () => {
+        const value = NumericDisplay.parse(input.value);
+        if (!(value > 0)) return invalid(input, 'Inserisci un valore positivo.');
+        change(() => { model.ref = {...(model.ref || {b: 1000, F: 1000}), [key]: value}; });
+      };
+    }
+    if ($('#section-member')) $('#section-member').onchange = e => {
+      const [from, to] = e.target.value.split('/');
+      change(() => {
+        if (!to) delete model.section;
+        else model.section = {
+          cut: 15, profile: [[0, 20], [10, 20], [10, 6], [50, 6], [50, 40], [60, 40]], ...model.section, from, to,
+          at: model.section && [from, to].includes(model.section.at) ? model.section.at : from
+        };
+        if (to && !model.ref) model.ref = {b: 1000, F: 1000};
+      });
+    };
+    if ($('#section-at')) $('#section-at').onchange = e => change(() => { model.section.at = e.target.value; });
+    if ($('#section-cut')) $('#section-cut').onchange = e => {
+      const value = NumericDisplay.parse(e.target.value);
+      if (!Number.isFinite(value)) return invalid(e.target, 'Inserisci la quota del punto in mm.');
+      change(() => { model.section.cut = value; });
+    };
+    if ($('#section-profile')) $('#section-profile').onchange = e => {
+      const profile = e.target.value.split('\n').map(row => row.trim()).filter(Boolean)
+          .map(row => row.split(/[\s;]+/).map(NumericDisplay.parse));
+      if (!CrossSection.valid(profile))
+        return invalid(e.target, 'Ogni riga contiene quota e larghezza, con quote crescenti dal lembo inferiore.');
+      change(() => { model.section.profile = profile; });
+    };
+  }
   function inspector() {
     const o = obj(), isNode = selection[0] === 'n', isEdge = selection[0] === 'e';
     const choices = [
@@ -206,7 +262,7 @@
           `<div class="setting"><span>Schema</span><strong>Telaio piano</strong></div><div class="setting"><span>Vincoli esterni</span><strong>${
               restraint}</strong></div><div class="setting"><span>Unità</span><strong>F · b · EJ</strong></div><span class="cap">Metodo delle forze</span>` +
           select('release', 'Incognita da rilasciare', releaseList(), model.release) +
-          check('axial', 'Includi la deformabilità assiale', model.axial) +
+          check('axial', 'Includi la deformabilità assiale', model.axial) + sectionDetails() +
           `<details class="model-opts"><summary>Impostazioni del disegno</summary><div class="props"><label class="span2">Nome del modello<input id="rename" maxlength="70" value="${
               esc(model.title)}"></label><label>Passo griglia [b]<select id="grid">${
               options([.1, .25, .5, 1, 2].map(n => [n, fmt(n)]), step)}</select></label></div></details>`;
@@ -268,6 +324,7 @@
           model.release = '';
       }, key === 'x' || key === 'y');
     });
+    sectionHandlers();
     if ($('#rename'))
       $('#rename').onchange = e => {
         const title = e.target.value.trim() || 'Struttura senza nome';
@@ -514,6 +571,8 @@
       }
       if (m.ref !== undefined && !(m.ref && [m.ref.b, m.ref.F].every(v => Number.isFinite(v) && v > 0))) throw Error();
       if (m.grid !== undefined && !(Number.isFinite(m.grid) && m.grid > 0)) throw Error();
+      if (m.section !== undefined && !(m.section && [m.section.from, m.section.to, m.section.at].every(v => typeof v === 'string') &&
+          Number.isFinite(m.section.cut) && CrossSection.valid(m.section.profile))) throw Error();
       load(m);
     } catch {
       $('#hint').textContent =

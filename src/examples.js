@@ -21,8 +21,9 @@ const Models = (() => {
   });
   const firstExam = {
     title: 'Tema 1 · Telaio con biella AB',
-    exercise: 'tema-1',
     ref: {b: 480, F: 1500},
+    // Section of beam HF at H, lower edge on the dashed side: width profile in mm and quota of point *.
+    section: {from: 'H', to: 'F', at: 'H', cut: 15, profile: [[0, 21], [14, 21], [14, 7], [50, 7], [50, 49], [63, 49]]},
     grid: 1 / 2,
     axial: false,
     // W_AE, the couple that node A applies to the end A of member AE.
@@ -42,6 +43,8 @@ const Models = (() => {
   const inclinedRoller = {
     title: 'Tema 2 · Carrello inclinato e molla rotazionale',
     ref: {b: 510, F: 5610},
+    section: {from: 'D', to: 'E', at: 'E', cut: 13,
+              profile: [[0, 24], [12, 24], [12, 12], [35, 12], [35, 48], [48, 48], [54, 0]]},
     grid: 1 / 2,
     axial: false,
     release: 'F/D/mi',
@@ -60,6 +63,7 @@ const Models = (() => {
   const internalSliders = {
     title: 'Tema 11 · Pattini interni e carico su un lato',
     ref: {b: 420, F: 780},
+    section: {from: 'C', to: 'H', at: 'H', cut: 9, profile: [[0, 18], [5, 18], [5, 6], [48, 6], [48, 42], [53, 42]]},
     grid: 1 / 2,
     axial: false,
     release: 'A/D/mi',
@@ -77,6 +81,7 @@ const Models = (() => {
   const springSupport = {
     title: 'Tema 8 · Doppio pendolo e molla traslazionale',
     ref: {b: 250, F: 1240},
+    section: {from: 'G', to: 'H', at: 'H', cut: 40, profile: [[0, 42], [12, 42], [12, 6], [41, 6], [41, 18], [53, 18]]},
     grid: 1,
     axial: false,
     release: 'B/C/mi',
@@ -93,6 +98,7 @@ const Models = (() => {
   const settlement = {
     title: 'Tema 13 · Cedimento imposto e asta inclinata',
     ref: {b: 340, F: 460},
+    section: {from: 'B', to: 'G', at: 'G', cut: 8, profile: [[0, 18], [6, 18], [6, 6], [48, 6], [48, 42], [54, 42]]},
     grid: 1,
     axial: false,
     release: 'r/G/1',

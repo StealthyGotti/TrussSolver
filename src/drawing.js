@@ -399,5 +399,46 @@ const Draft = (() => {
     }
     svg.innerHTML = out;
   }
-  return {draw, viewport, esc, fraction: NumericDisplay.fraction, ordinates, diagramField};
+  // Cross-section sheet: outline with its quotas, centroidal axes, central ellipse of inertia,
+  // the point of the extreme normal stress and the point * of the shear check.
+  function section(svg, data, h, w, height) {
+    const outline = CrossSection.outline(data.profile), dark = '#191c19', thin = '#6d736f';
+    const left = 46, right = 30, top = 22, bottom = 44;
+    const scale = Math.min((w - left - right) / h.width, (height - top - bottom) / (h.top - h.bottom));
+    const x0 = left + (w - left - right - h.width * scale) / 2, y0 = height - bottom;
+    const px = x => x0 + x * scale, py = y => y0 - (y - h.bottom) * scale;
+    const text = (x, y, value, anchor = 'middle', size = 10) => label(x, y, value, dark, size, anchor);
+    const number = value => NumericDisplay.decimal(Number(value.toFixed(2)));
+    const unique = values => [...new Set(values.map(v => Number(v.toFixed(6))))].sort((p, q) => p - q);
+    let out = '<rect width="100%" height="100%" fill="white"/>';
+    // Quotas along y on the left and along x below, as on the sheets.
+    const axisX = x0 - 24, axisY = y0 + 16;
+    out += line(axisX, py(h.bottom), axisX, py(h.top), thin, 1) + line(px(0), axisY, px(h.width), axisY, thin, 1);
+    for (const y of unique(data.profile.map(p => p[0])))
+      out += line(axisX - 3, py(y), axisX + 3, py(y), thin, 1) + text(axisX - 6, py(y) + 3.5, number(y), 'end');
+    for (const x of unique(outline.map(p => p[0])))
+      out += line(px(x), axisY - 3, px(x), axisY + 3, thin, 1) + text(px(x), axisY + 14, number(x));
+    out += text(axisX - 6, (py(h.bottom) + py(h.top)) / 2 + 3.5, 'y', 'end') + text(px(0) - 14, axisY + 14, 'mm', 'end') +
+        text(px(h.width) + 12, axisY + 14, 'x', 'start');
+    // Centroidal axes and central ellipse of inertia, with semi-axes √(Jv/A) along u and √(Ju/A) along v.
+    const cx = px(h.width / 2), cy = py(h.centroid);
+    out += line(px(0) - 10, cy, px(h.width) + 14, cy, thin, .8) + line(cx, py(h.bottom) + 8, cx, py(h.top) - 12, thin, .8) +
+        text(px(h.width) + 18, cy + 3.5, 'u', 'start') + text(cx + 7, py(h.top) - 6, 'v', 'start') +
+        `<ellipse cx="${cx}" cy="${cy}" rx="${Math.sqrt(h.inertiaV / h.area) * scale}" ry="${
+            Math.sqrt(h.inertia / h.area) * scale}" fill="none" stroke="${thin}" stroke-width=".9"/>`;
+    out += path('M ' + outline.map(p => px(p[0]) + ' ' + py(p[1])).join(' L ') + ' Z', dark, 'none', 2);
+    // Chord through the point *, with its quota on the right.
+    out += line(px(0) - 6, py(h.cut), px(h.width) + 6, py(h.cut), thin, .8) +
+        text(px(h.width) + 9, py(h.cut) + 3.5, number(h.cut), 'start');
+    const star = (x, y) => [0, 60, 120].map(a => {
+      const dx = 4.2 * Math.cos(a * Math.PI / 180), dy = 4.2 * Math.sin(a * Math.PI / 180);
+      return line(x - dx, y - dy, x + dx, y + dy, dark, 1.2);
+    }).join('');
+    out += star(px(h.xCut), py(h.cut)) + text(px(h.xCut) + 8, py(h.cut) - 7, 'σc, τc', 'start') +
+        circle(px(h.xMax), py(h.yMax), 2.6, dark, dark, 1) +
+        text(px(h.xMax) + (h.uMax < 0 ? 7 : -7), py(h.yMax) + (h.vMax < 0 ? -7 : 14), 'σm', h.uMax < 0 ? 'start' : 'end');
+    svg.setAttribute('viewBox', `0 0 ${w} ${height}`);
+    svg.innerHTML = out;
+  }
+  return {draw, viewport, esc, fraction: NumericDisplay.fraction, ordinates, diagramField, section};
 })();
