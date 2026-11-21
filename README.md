@@ -1,6 +1,6 @@
 **🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
 
-# TrussSolver
+# 🏗️ TrussSolver 🏗️
 
 Disegni una struttura piana come quella della traccia d’esame, premi **Calcola** e ottieni lo svolgimento completo con il metodo delle forze: i diagrammi N, T e M, il valore dell’incognita iperstatica e tutti i passaggi dei lavori virtuali.
 
@@ -8,9 +8,11 @@ Risolve anche la sezione: inserisci il profilo disegnato sulla traccia e calcola
 
 È pensato per studenti di ingegneria che vogliono controllare i propri conti passo per passo. Funziona nel browser e non richiede installazioni.
 
+Metti una ⭐️ alla repo per rimanere aggiornato!
+
 **È gratis per tutti.** Se ti è stato utile e ti va, puoi [offrirmi un caffè ☕](https://www.paypal.com/paypalme/mattiagottiii)
 
-Hai domande sul programma o ti interessano ripetizioni su materie di Aerospaziale? [Contattami](mailto:mattia2002a@gmail.com?subject=TrussSolver)
+Hai domande, consigli o ti interessano ripetizioni su materie di Aerospaziale? [Contattami](mailto:mattia2002a@gmail.com?subject=TrussSolver)
 
 | Lo schema che disegni | I diagrammi che ottieni |
 | --- | --- |
