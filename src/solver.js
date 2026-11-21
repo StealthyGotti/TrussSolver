@@ -340,7 +340,7 @@ const Mechanics = (() => {
     const norm = Math.hypot(dx, dy);
     return finite(norm) && norm > 1e-9 ? [dx / norm, dy / norm] : null;
   }
-  return {solve, evaluate, supportAxes, slideDirection};
+  return {solve, evaluate, integral, supportAxes, slideDirection};
 })();
 if (typeof module !== 'undefined')
   module.exports = Mechanics;

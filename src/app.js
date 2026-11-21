@@ -25,7 +25,7 @@
   document.querySelectorAll('[data-icon]').forEach(i => i.outerHTML = icon(i.dataset.icon));
   const clone = o => JSON.parse(JSON.stringify(o));
   let model = clone(Models.examples[0]), result = null, problem = '', selection = '', tool = 'select',
-      first = '', view, step = Models.examples[0].grid, history = [], ui = {tab: 0, stage: 'final', comp: 'all', decimals: false};
+      first = '', view, step = Models.examples[0].grid, history = [], ui = {tab: 'diagrams', stage: 'final', comp: 'all', decimals: false};
   const fmt = value => ui.decimals ? NumericDisplay.decimal(value) : NumericDisplay.fraction(value);
   let pointer = null;
   let fitNeeded = true;

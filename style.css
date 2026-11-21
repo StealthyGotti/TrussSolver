@@ -638,3 +638,35 @@ table.values td { padding: 5px 9px; }
 table.values td:nth-child(2) { color: var(--muted); font-family: inherit; white-space: normal; }
 table.values td:nth-child(3) { text-align: right; font-weight: 600; }
 @media (max-width: 760px) { .section-sheet { grid-template-columns: 1fr; } }
+
+figure.plot { margin: 0; }
+figure.plot figcaption {
+  padding: 6px 10px 9px;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--light);
+  background: #fff;
+}
+.result-grid.reactions { grid-template-columns: minmax(0, 2.2fr) minmax(220px, 1fr); }
+.result-grid.reactions .plot svg { height: 560px; }
+.report-body h4 { margin: 14px 0 6px; font-size: 13px; }
+ul.choices { margin: 0 0 12px; padding-left: 18px; line-height: 1.7; }
+/* Quadro contributi PLV, ruled like the solution sheets. */
+table.quadro { width: auto; min-width: 0; margin: 4px 0 12px; }
+table.quadro th, table.quadro td {
+  padding: 4px 9px;
+  text-align: center;
+  font: 12px var(--mono);
+  border-bottom: 0;
+  background: none;
+  color: var(--ink);
+}
+table.quadro th { border-bottom: 1px solid #8d9a95; font-weight: 600; }
+table.quadro td:first-child, table.quadro th:first-child { text-align: left; border-right: 1px solid #8d9a95; }
+table.quadro tr.pair td { border-bottom: 1px solid #cfd8d4; }
+table.quadro td.sum { border-left: 1px solid #8d9a95; border-bottom: 1px solid #cfd8d4; }
+table.quadro td.sum + td.sum { border-left: 1px solid #cfd8d4; }
+table.quadro tr.extra td { border-bottom: 1px solid #cfd8d4; }
+table.quadro tr.extra td:nth-child(2) { text-align: left; font-family: inherit; }
+.formula.developments { line-height: 2.1; white-space: nowrap; }
+.formula sub, .formula sup, table.quadro sub { font-size: 75%; }

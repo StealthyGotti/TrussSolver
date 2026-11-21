@@ -179,7 +179,7 @@ const Draft = (() => {
       if (angle< -90) angle+=180;
       let px=x, py=y;
       // Try small displacements along the same member before moving away from its axis.
-      for (const [along,away] of [[0,0],[8,0],[-8,0],[0,10],[14,9],[-14,9],[0,21]]) {
+      for (const [along,away] of [[0,0],[9,0],[-9,0],[18,0],[-18,0],[30,0],[-30,0],[0,10],[14,9],[-14,9],[0,21]]) {
         px=Math.max(dx+1,Math.min(width-dx-1,x+along*c+away*nx));
         py=Math.max(dy+1,Math.min(height-dy-1,y+along*s+away*ny));
         const box=[px-dx,py-dy,px+dx,py+dy];
@@ -191,9 +191,11 @@ const Draft = (() => {
   }
 
   function draw(svg, model, view, options = {}) {
-    const {width: w, height: h} = view, {result, state, component, reduced, selected, first} = options;
+    // Three kinds of drawing: the interactive editor, the calculation scheme of the released
+    // structure (schema, with supports, loads and the unknowns X) and the result diagrams (state).
+    const {width: w, height: h} = view, {result, state, component, reduced, selected, first, schema} = options;
     const fmt = options.decimals ? NumericDisplay.decimal : NumericDisplay.fraction;
-    const editable = !state, showLoads = editable || options.showLoads,
+    const editable = !state, interactive = editable && !schema, showLoads = editable || options.showLoads,
           nodes = new Map(model.nodes.map(n => [n.id, n]));
     const at = id => pos(nodes.get(id), view);
     // Loads are captioned as on the exam sheets: multiples of F, of W = Fb and of q = F/b.
@@ -210,6 +212,9 @@ const Draft = (() => {
     const realLoads = !state || state === result.primary || state === result.final;
     const serviceIndex = state ? result.service.indexOf(state) : -1;
     const unitLoad = serviceIndex >= 0 ? rel[serviceIndex] : null;
+    // Unknowns drawn on the structure: all of them on the scheme, the unit one on a service system.
+    const shown = schema ? rel : unitLoad && showLoads ? [unitLoad] : [];
+    const unknownName = d => schema ? 'X' + (rel.length > 1 ? rel.indexOf(d) + 1 : '') : 'X=1';
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     const gridID = svg.id + '-grid';
     let spacing = view.scale * (options.step || .5);
@@ -221,7 +226,7 @@ const Draft = (() => {
         spacing}" patternUnits="userSpaceOnUse"><path d="M ${spacing} 0 H 0 V ${
         spacing}" fill="none" stroke="#d7e3db" stroke-width=".85"/></pattern></defs><rect width="100%" height="100%" fill="url(#${
         gridID})"/>`;
-    if (!editable) out='<rect width="100%" height="100%" fill="white"/>';
+    if (!interactive) out='<rect width="100%" height="100%" fill="white"/>';
     const amplitude=Math.min(46,(h-100)*.108,(w-90)*.18);
     let fibres='', fills = '', members = '', symbols = '', springs = '', labels = '', hits = '';
     // Screen direction that points away from the members meeting at a node, among the given ones.
@@ -272,6 +277,8 @@ const Draft = (() => {
               point(1,end).join(' ')+' L '+[u,v].join(' '),'#252825','none',1.25,'class="diagram-envelope"');
         }
         const marks=Math.abs(start-mid)+Math.abs(end-mid)<max*1e-10 ? [[.5,mid]] : [[0,start],[1,end]];
+        // End ordinates are quoted on the side opposite to the diagram, as on the exam sheets.
+        // An interior extreme larger than both ends is quoted beyond the curve.
         const peak=ordinates(poly,len)[2];
         if (peak && Math.abs(peak[1])>Math.max(Math.abs(start),Math.abs(end))+max*1e-10)
           marks.push([peak[0]/len,peak[1],true]);
@@ -304,7 +311,7 @@ const Draft = (() => {
         const slide = Mechanics.slideDirection(e, end, c, -s);
         if (slide)
           symbols += connection(px, py, c * sign, s * sign, hinge, slide[0], -slide[1]);
-        else if (!centralHinges.has(id) && (hinge || e.type === 'bar'))
+        else if (!centralHinges.has(id) && (hinge || e.type === 'bar' || releases.some(d => d.kind === (end ? 'mj' : 'mi'))))
           symbols += circle(px + c * 8 * sign, py + s * 8 * sign, 3.8, green, '#fff', 1.4);
       });
       // A rotational spring between a member end and its node: two concentric circles on the node.
@@ -312,17 +319,18 @@ const Draft = (() => {
         if (kSpring && !releases.some(d => d.kind === kind))
           springs += circle(px, py, 7.6, green, '#fff', 1.5) + circle(px, py, 4, green, '#fff', 1.5);
       }
-      if (showLoads && unitLoad && unitLoad.kind !== 'r' && unitLoad.k === k) {
-        if (unitLoad.kind === 'n') {
+      for (const d of shown) {
+        if (d.kind === 'r' || d.k !== k) continue;
+        if (d.kind === 'n') {
           // Positive tension in a removed bar pulls its attachment nodes together.
           const bx = e.type === 'bar' ? u : x + 32 * c, by = e.type === 'bar' ? v : y + 32 * s;
-          symbols +=
-              arrow(x, y, x + 22 * c, y + 22 * s, rust, 2) + arrow(bx, by, bx - 22 * c, by - 22 * s, rust, 2);
+          symbols += arrow(x, y, x + 22 * c, y + 22 * s, rust, 2) + arrow(bx, by, bx - 22 * c, by - 22 * s, rust, 2) +
+              label((x + bx) / 2 - s * 12, (y + by) / 2 + c * 12 + 4, unknownName(d), rust, 10);
         } else {
-          const atI = unitLoad.kind === 'mi', sign = atI ? 1 : -1, px = atI ? x : u, py = atI ? y : v;
-          // Applied to the isolated member: -Mi at i and +Mj at j.
-          symbols += couple(px + 23 * c * sign, py + 23 * s * sign, -sign) +
-              couple(px - 12 * c * sign, py - 12 * s * sign, sign);
+          const sign = d.kind === 'mi' ? 1 : -1, px = d.kind === 'mi' ? x : u, py = d.kind === 'mi' ? y : v;
+          // W = +1 is an anticlockwise couple on the member end and a clockwise one on the node.
+          symbols += couple(px + 24 * c * sign, py + 24 * s * sign, 1, unknownName(d)) +
+              couple(px - 13 * c * sign, py - 13 * s * sign, -1, '');
         }
       }
       hits += line(x, y, u, v, 'transparent', 17, `data-edge="${k}" style="cursor:pointer"`);
@@ -355,10 +363,10 @@ const Draft = (() => {
         if (n.m)
           symbols += couple(x, y, n.m, caption(n.m,'W'));
       }
-      if (showLoads && unitLoad?.kind === 'r' && unitLoad.k === i) {
-        symbols += unitLoad.d === 2 ?
-            couple(x, y, 1) :
-            pointLoad(x, y, unitLoad.d === 0 ? 1 : 0, unitLoad.d === 1 ? 1 : 0, 'X=1');
+      for (const d of shown) {
+        if (d.kind !== 'r' || d.k !== i) continue;
+        symbols += d.d === 2 ? couple(x, y, 1, unknownName(d)) :
+            pointLoad(x, y, d.d === 0 ? 1 : 0, d.d === 1 ? 1 : 0, unknownName(d), true);
       }
       if (!editable) return;
       if (chosen)
@@ -369,7 +377,7 @@ const Draft = (() => {
           `<circle cx="${x}" cy="${y}" r="11" fill="transparent" data-node="${i}" style="cursor:pointer"/>`;
     });
     if (!editable) labels+=diagramLabels(numbers,w,h);
-    if (editable && model.nodes.length > 1) {
+    if (interactive && model.nodes.length > 1) {
       // Dimension chains along both axes, in multiples of b.
       const levels = key => [...new Set(model.nodes.map(n => Number(n[key].toFixed(9))))].sort((p, q) => p - q);
       const xs = levels('x'), ys = levels('y');
@@ -389,8 +397,8 @@ const Draft = (() => {
         });
       }
     }
-    out += fills + fibres + members + symbols + springs + labels + (editable ? hits : '');
-    if (editable) {
+    out += fills + fibres + members + symbols + springs + labels + (interactive ? hits : '');
+    if (interactive) {
       out += arrow(22, h - 48, 48, h - 48, faint, 1) + arrow(22, h - 48, 22, h - 71, faint, 1) +
           label(52, h - 45, 'x', faint, 10) + label(21, h - 76, 'y', faint, 10);
     }
@@ -440,5 +448,77 @@ const Draft = (() => {
     svg.setAttribute('viewBox', `0 0 ${w} ${height}`);
     svg.innerHTML = out;
   }
-  return {draw, viewport, esc, fraction: NumericDisplay.fraction, ordinates, diagramField, section};
+  // Reactions sheet: every member is drawn apart from its nodes with the forces and couples
+  // that the nodes apply to its ends. actions[k][end] = {h, v, w} in global axes.
+  function reactions(svg, model, result, actions, w, h, decimals) {
+    const fmt = decimals ? NumericDisplay.decimal : NumericDisplay.fraction, dark = '#191c19';
+    const nodes = new Map(model.nodes.map(n => [n.id, n]));
+    // Members are moved apart level by level: equal midpoint abscissae or ordinates stay aligned,
+    // and each further level shifts by one step. Lengths and directions do not change.
+    const middle = (e, key) => (nodes.get(e.a)[key] + nodes.get(e.b)[key]) / 2;
+    const shift = key => {
+      const levels = [...new Set(model.members.map(e => Number(middle(e, key).toFixed(6))))].sort((p, q) => p - q);
+      const step = levels.length > 1 ? 1.5 * Math.max(levels.at(-1) - levels[0], 1) / (levels.length - 1) : 0;
+      return e => levels.indexOf(Number(middle(e, key).toFixed(6))) * step;
+    };
+    const shiftX = shift('x'), shiftY = shift('y');
+    const placed = model.members.map(e => {
+      const a = nodes.get(e.a), b = nodes.get(e.b), dx = shiftX(e), dy = shiftY(e);
+      return [{x: a.x + dx, y: a.y + dy}, {x: b.x + dx, y: b.y + dy}];
+    });
+    const view = viewport(placed.flat(), w, h);
+    const text = (x, y, value, anchor = 'middle') => label(x, y, value, dark, 10, anchor);
+    const small = value => Math.abs(value) < 1e-10, diagonals = [[.7, .7], [-.7, .7], [.7, -.7], [-.7, -.7]];
+    let out = '<rect width="100%" height="100%" fill="white"/>';
+    model.members.forEach((e, k) => {
+      const [p, q] = placed[k].map(point => pos(point, view)), L = Math.hypot(q[0] - p[0], q[1] - p[1]);
+      out += line(...p, ...q, dark, 1.8);
+      [[p, 1, e.a], [q, -1, e.b]].forEach(([[x, y], way, id], end) => {
+        // (mx, my) points from this end into the member, in screen axes.
+        const mx = way * (q[0] - p[0]) / L, my = way * (q[1] - p[1]) / L, a = actions[k][end];
+        // Directions around the end that are already taken by the member and by the arrows.
+        const taken = [[mx, my]];
+        // The free diagonal farthest from what is already drawn hosts the next caption.
+        const corner = () => {
+          const best = diagonals.reduce((u, v) =>
+              Math.max(...taken.map(t => t[0] * v[0] + t[1] * v[1])) < Math.max(...taken.map(t => t[0] * u[0] + t[1] * u[1])) ? v : u);
+          taken.push(best);
+          return best;
+        };
+        for (const [value, dx, dy] of [[a.h, Math.sign(a.h), 0], [a.v, 0, -Math.sign(a.v)]]) {
+          if (small(value)) continue;
+          // A force that pushes into the member arrives at its end from outside, the others leave it.
+          const inward = dx * mx + dy * my > .3, length = 26, far = inward ? -1 : 1;
+          const tail = inward ? [x - dx * length, y - dy * length] : [x, y];
+          out += arrow(tail[0], tail[1], tail[0] + dx * length, tail[1] + dy * length, dark, 1.2);
+          taken.push([dx * far, dy * far]);
+          const caption = fmt(Math.abs(value)) + 'F';
+          if (Math.abs(dx * mx + dy * my) > .7) {
+            // Along the member axis the caption sits beside the arrow, so that two facing ends stay apart.
+            const ax = x + dx * far * length * .55, ay = y + dy * far * length * .55;
+            out += dx ? text(ax, ay - 6, caption) : text(ax + 6, ay + 3.5, caption, 'start');
+            taken.push(dx ? [dx * far * .7, -.7] : [.7, dy * far * .7]);
+          } else {
+            const tx = x + dx * far * (length + 4), ty = y + dy * far * (length + 4);
+            out += dx ? text(tx, ty + 3.5, caption, dx * far > 0 ? 'start' : 'end') : text(tx, ty + (dy * far > 0 ? 9 : -2), caption);
+          }
+        }
+        if (!small(a.w)) {
+          const sign = Math.sign(a.w), r = 10;
+          // An open circle around the end, with its gap towards the member.
+          const angle = Math.atan2(my, mx), from = angle + sign * .9, to = angle - sign * .9;
+          const start = [x + r * Math.cos(from), y + r * Math.sin(from)], stop = [x + r * Math.cos(to), y + r * Math.sin(to)];
+          out += path(`M ${start[0]} ${start[1]} A ${r} ${r} 0 1 ${sign > 0 ? 1 : 0} ${stop[0]} ${stop[1]}`, dark, 'none', 1.1) +
+              arrow(stop[0] + sign * Math.sin(to) * 4, stop[1] - sign * Math.cos(to) * 4, stop[0], stop[1], dark, 1.1);
+          const [cx, cy] = corner();
+          out += text(x + cx * 21, y + cy * 21 + 3.5, fmt(Math.abs(a.w)) + 'Fb', cx > 0 ? 'start' : 'end');
+        }
+        const [lx, ly] = corner();
+        out += label(x + lx * 15, y + ly * 15 + 4, id, '#6d736f', 10);
+      });
+    });
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.innerHTML = out;
+  }
+  return {draw, viewport, esc, fraction: NumericDisplay.fraction, ordinates, diagramField, section, reactions};
 })();
