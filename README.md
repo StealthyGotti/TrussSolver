@@ -108,7 +108,7 @@ Non sono previsti carichi distribuiti variabili, vincoli a terra inclinati e sez
 
 ## Gratis per tutti
 
-TrussSolver è gratuito e chiunque può usarlo e condividerlo.
+TrussSolver è gratuito e chiunque può usarlo e condividerlo. Se ti è stato utile e ti va, puoi [offrirmi un caffè ☕](https://www.paypal.com/paypalme/mattiagottiii).
 
 ## Per chi vuole guardare il codice
 

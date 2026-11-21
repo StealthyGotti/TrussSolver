@@ -686,3 +686,14 @@ select.language {
   cursor: pointer;
   font-weight: 550;
 }
+
+.site-foot {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 clamp(14px, 4vw, 70px) 34px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+.site-foot a { color: var(--green); font-weight: 600; text-decoration: none; }
+.site-foot a:hover { text-decoration: underline; }

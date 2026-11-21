@@ -108,7 +108,7 @@ Varying distributed loads, inclined supports and non-symmetric cross-sections ar
 
 ## Free for everyone
 
-TrussSolver is free, and anyone can use it and share it.
+TrussSolver is free, and anyone can use it and share it. If it helped you and you feel like it, you can [buy me a coffee ☕](https://www.paypal.com/paypalme/mattiagottiii).
 
 ## For those who want to look at the code
 

@@ -25,6 +25,8 @@ const I18n = (() => {
     '＋ Nuovo disegno': '＋ New drawing',
     'Nuova struttura': 'New structure',
     'Struttura senza nome': 'Untitled structure',
+    'TrussSolver è gratuito per tutti.': 'TrussSolver is free for everyone.',
+    'Se ti è stato utile, offrimi un caffè ☕': 'If it helped you, buy me a coffee ☕',
     // Models
     'Tema 1 · Telaio con biella AB': 'Exam 1 · Frame with bar AB',
     'Tema 2 · Carrello inclinato e molla rotazionale': 'Exam 2 · Inclined roller and rotational spring',
