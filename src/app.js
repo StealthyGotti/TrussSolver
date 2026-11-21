@@ -138,9 +138,12 @@
     if (!axes.length)
       return '';
     const springs = [['kx', 'k orizzontale [EJ/b³]'], ['ky', 'k verticale [EJ/b³]'], ['kr', 'k rotazionale [EJ/b]']];
-    return '<details' + (axes.some(d => n[springs[d][0]]) ? ' open' : '') +
-        '><summary>Molle del vincolo</summary><p class="help">Rigidezza della molla interposta fra nodo e terreno. Il valore 0 indica un vincolo rigido.</p><div class="props">' +
-        axes.map(d => field(springs[d][0], springs[d][1], n[springs[d][0]] || 0)).join('') + '</div></details>';
+    const moves = [['ux', 'u orizzontale [Fb³/EJ]'], ['uy', 'v verticale [Fb³/EJ]'], ['ur', 'φ rotazione ↺ [Fb²/EJ]']];
+    return '<details' + (axes.some(d => n[springs[d][0]] || n[moves[d][0]]) ? ' open' : '') +
+        '><summary>Molle e cedimenti del vincolo</summary><p class="help">Rigidezza della molla interposta fra nodo e terreno. Il valore 0 indica un vincolo rigido.</p><div class="props">' +
+        axes.map(d => field(springs[d][0], springs[d][1], n[springs[d][0]] || 0)).join('') +
+        '</div><p class="help">Spostamento imposto al vincolo, positivo verso destra, verso l’alto o in senso antiorario.</p><div class="props">' +
+        axes.map(d => field(moves[d][0], moves[d][1], n[moves[d][0]] || 0)).join('') + '</div></details>';
   }
   function inspector() {
     const o = obj(), isNode = selection[0] === 'n', isEdge = selection[0] === 'e';
@@ -252,6 +255,12 @@
           o.springI = 0;
         if (key === 'hj' && value)
           o.springJ = 0;
+        if (key === 'support')
+          // A settlement needs a restrained component.
+          ['ux', 'uy', 'ur'].forEach((u, d) => {
+            if (!Mechanics.supportAxes[value].includes(d))
+              o[u] = 0;
+          });
         if (key === 'type' && value === 'bar')
           Object.assign(o, {qx: 0, qy: 0, kappa: 0, hi: false, hj: false, springI: 0, springJ: 0, slideI: '', slideJ: '',
                             ...Object.fromEntries(endLoadKeys.map(k => [k, 0]))});
@@ -476,7 +485,8 @@
       for (const n of m.nodes) {
         if (!n || typeof n.id !== 'string' || !/^[A-Za-z0-9_-]{1,14}$/.test(n.id) || ids.has(n.id) ||
             !Object.hasOwn(supports, n.support) || ![n.x, n.y, n.fx, n.fy, n.m].every(Number.isFinite) ||
-            ![n.kx, n.ky, n.kr].every(k => k === undefined || (Number.isFinite(k) && k >= 0)))
+            ![n.kx, n.ky, n.kr].every(k => k === undefined || (Number.isFinite(k) && k >= 0)) ||
+            ![n.ux, n.uy, n.ur].every(u => u === undefined || Number.isFinite(u)))
           throw Error();
         ids.add(n.id);
       }

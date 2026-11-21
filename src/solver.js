@@ -27,6 +27,9 @@ const Mechanics = (() => {
         fail('Controlla coordinate, vincoli e carichi nodali.');
       if (![n.kx, n.ky, n.kr].every(k => k === undefined || (finite(k) && k >= 0)))
         fail('Le molle dei vincoli richiedono rigidezze positive. Il valore 0 indica un vincolo rigido.');
+      const settled = [n.ux, n.uy, n.ur].map(u => u ?? 0);
+      if (!settled.every(finite) || settled.some((u, d) => u && !supportAxes[n.support].includes(d)))
+        fail('Un cedimento si assegna solo lungo una componente vincolata del nodo.');
       indices.set(n.id, i);
     }
     const pairs = new Set();
@@ -280,15 +283,16 @@ const Mechanics = (() => {
       });
     }
     // Elastic supports: the node moves by −R/k, so the work of the virtual reaction adds R'R/k.
-    function supportWork(u, v) {
+    // Imposed settlements: the virtual reaction works on the given displacement, which adds −R'u.
+    function supportWork(u, v, initial) {
       return descriptors.flatMap((d, j) => {
         if (d.kind !== 'r' || d.artificial)
           return [];
-        const n = nodes[d.k], k = [n.kx, n.ky, n.kr][d.d] || 0;
-        if (!k)
+        const n = nodes[d.k], k = [n.kx, n.ky, n.kr][d.d] || 0, moved = [n.ux, n.uy, n.ur][d.d] || 0;
+        if (!k && !moved)
           return [];
-        const spring = u.vector[j] * v.vector[j] / k;
-        return [{label: d.label, node: n.id, spring, total: spring}];
+        const spring = k ? u.vector[j] * v.vector[j] / k : 0, settle = initial ? -u.vector[j] * moved : 0;
+        return [{label: d.label, node: n.id, stiffness: k, moved, spring, settle, total: spring + settle}];
       });
     }
     const sum = terms => terms.reduce((s, t) => s + t.total, 0);

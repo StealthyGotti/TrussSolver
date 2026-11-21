@@ -338,6 +338,16 @@ const Draft = (() => {
             sides.filter(d => (axes.includes(0) && !axes.includes(1)) === (d[0] !== 0));
         const [ox, oy] = outward(n.id, [x, y], free);
         symbols += support(x, y, axes, ox, oy, centralHinges.has(n.id), axes.some(d => [n.kx, n.ky, n.kr][d]));
+        // Imposed settlement: a short arrow beyond the support, captioned in multiples of δ = Fb³/EJ.
+        [[n.ux, 1, 0], [n.uy, 0, -1]].forEach(([moved, ax, ay]) => {
+          if (!moved) return;
+          const sign = Math.sign(moved), cx = x + ox * 44 + Math.abs(ay) * 12 * (ox ? 0 : 1), cy = y + oy * 44;
+          symbols += line(cx - Math.abs(ay) * 9, cy - Math.abs(ax) * 9, cx + Math.abs(ay) * 9, cy + Math.abs(ax) * 9, green, 1) +
+              arrow(cx - ax * sign * 9, cy - ay * sign * 9, cx + ax * sign * 9, cy + ay * sign * 9, green, 1.4) +
+              label(cx + ox * 16 + (ox ? 0 : 14), cy + oy * 10 + 4, caption(moved, 'δ'), green, 11);
+        });
+        if (n.ur)
+          symbols += label(x + ox * 44, y + oy * 44 + 4, caption(n.ur, 'φ'), green, 11);
       }
       if (showLoads && realLoads) {
         symbols += pointLoad(x, y, n.fx, 0, caption(n.fx, 'F'), (x-w/2)*n.fx>0) +

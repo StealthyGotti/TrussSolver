@@ -251,3 +251,25 @@ test('Molla traslazionale sotto il carrello di una mensola puntellata', () => {
   m.nodes[1].ky = -1;
   assert.throws(() => solve(m), /molle dei vincoli/);
 });
+test('Cedimento imposto al carrello di una mensola puntellata', () => {
+  const L = 4, drop = 2, m = span({}, 'fixed', 'rollerY');
+  m.nodes[1].uy = -drop;
+  m.release = 'r/B/1';
+  const r = solve(m);
+  near(r.delta[0], drop);
+  near(r.support0[0][0].settle, drop);
+  near(r.X[0], -3 * drop / L ** 3);
+  // The roller pulls the tip down: the upper fibres are in tension at the clamp.
+  near(evaluate(r.final.fields[0].M, 0), -3 * drop / L ** 2);
+  // The settled reaction is not the unknown: the virtual reaction still works on the settlement.
+  m.release = 'r/A/2';
+  const other = solve(m);
+  near(value(other, 'r/B/1'), -3 * drop / L ** 3);
+  near(other.support0[0][0].settle, -drop / L);
+  // A rotation imposed at the clamp, and a settlement along a free component.
+  const turned = span({}, 'fixed', 'rollerY');
+  turned.nodes[0].ur = 1 / 2;
+  near(evaluate(solve(turned).final.fields[0].M, 0), -3 / (2 * L));
+  m.nodes[1].ux = 1;
+  assert.throws(() => solve(m), /cedimento/);
+});
