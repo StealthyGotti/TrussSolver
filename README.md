@@ -8,9 +8,9 @@ Risolve anche la sezione: inserisci il profilo disegnato sulla traccia e calcola
 
 È pensato per studenti di ingegneria che vogliono controllare i propri conti passo per passo. Funziona nel browser e non richiede installazioni.
 
-**È gratis per tutti.** Se ti è stato utile e ti va, puoi [offrirmi un caffè ☕](https://www.paypal.com/paypalme/mattiagottiii).
+**È gratis per tutti.** Se ti è stato utile e ti va, puoi [offrirmi un caffè ☕](https://www.paypal.com/paypalme/mattiagottiii)
 
-Hai domande sul programma o ti interessano ripetizioni su questi argomenti? [Contattami](mailto:mattia2002a@gmail.com?subject=TrussSolver).
+Hai domande sul programma o ti interessano ripetizioni su materie di Aerospaziale? [Contattami](mailto:mattia2002a@gmail.com?subject=TrussSolver)
 
 | Lo schema che disegni | I diagrammi che ottieni |
 | --- | --- |
