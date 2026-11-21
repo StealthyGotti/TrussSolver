@@ -237,7 +237,7 @@
         html += '<details' + (endLoadKeys.some(k => o[k]) ? ' open' : '') +
             '><summary>Carichi su un solo lato del nodo</summary><p class="help">Forze e coppie applicate all’estremo dell’asta, dalla parte dell’asta rispetto a cerniere, pattini e carrelli.</p>';
         for (const [end, from, to] of [['I', o.a, o.b], ['J', o.b, o.a]]) {
-          const tag = '_' + esc(from) + esc(to);
+          const tag = '<sub>' + esc(from) + esc(to) + '</sub>';
           html += '<div class="props">' + field('fx' + end, 'H' + tag + ' [F]', o['fx' + end] || 0) +
               field('fy' + end, 'V' + tag + ' [F]', o['fy' + end] || 0) +
               field('m' + end, 'W' + tag + ' ↺ [Fb]', o['m' + end] || 0) + '</div>';

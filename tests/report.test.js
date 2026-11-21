@@ -88,3 +88,24 @@ test('Reazioni: azioni dei nodi sulle aste e reazioni vincolari', () => {
 test('Con Mostra decimali il quadro usa numeri decimali', () => {
   assert.equal(row(sheet(1, 'plv', true), '|iperstatica'), '|iperstatica X=WAE|-0,8125Fb||');
 });
+
+test('Più incognite: un quadro per ciascuna, con i termini misti', () => {
+  const {node, beam} = Models;
+  const model = {title: 'Trave incastrata e appoggiata in mezzeria', ref: {b: 1000, F: 1000}, axial: false, release: '',
+    nodes: [node('A', 0, 0, 'fixed'), node('B', 2, 0, 'rollerY'), node('C', 4, 0, 'rollerY')],
+    members: [beam('A', 'B', {qy: -1}), beam('B', 'C', {qy: -1})]};
+  const r = Mechanics.solve(model);
+  assert.equal(r.X.length, 2);
+  NumericDisplay.learn(model);
+  const plot = id => ({id, clientWidth: 420, clientHeight: 320, setAttribute() {}});
+  const host = {innerHTML: '', querySelectorAll: () => [], querySelector: q => /plot|plv/.test(q) ? plot(q.slice(1)) : null};
+  for (const tab of ['diagrams', 'reactions', 'equilibrium', 'plv'])
+    Report.render(host, model, r, {tab, stage: 'final', comp: 'all'}, () => {});
+  const text = host.innerHTML.replace(/<[^>]+>/g, '');
+  assert.match(text, /Quadro contributi PLV per iperstatica X1=/);
+  assert.match(text, /Quadro contributi PLV per iperstatica X2=/);
+  assert.match(text, /∫X2M1M2\/EJdx/);
+  // The three vertical reactions carry the whole distributed load.
+  const value = label => r.final.vector[r.descriptors.findIndex(d => d.label === label)];
+  assert.ok(Math.abs(value('V_A') + value('V_B') + value('V_C') - 4) < 1e-9);
+});

@@ -359,7 +359,7 @@ const Report = (() => {
     if (overlay)
       overlay.onchange = () => onChange({showLoads: overlay.checked});
     const sectionPlot = host.querySelector('#section-plot');
-    if (sectionPlot)
+    if (sectionPlot && section)
       Draft.section(sectionPlot, model.section, section, sectionPlot.clientWidth || 360, sectionPlot.clientHeight || 330);
     for (const [id, options] of plots) {
       const svg = host.querySelector('#' + id), w = Math.max(220, svg.clientWidth), h = svg.clientHeight || 300;
