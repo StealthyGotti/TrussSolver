@@ -10,6 +10,8 @@ Risolve anche la sezione: inserisci il profilo disegnato sulla traccia e calcola
 
 **È gratis per tutti.** Se ti è stato utile e ti va, puoi [offrirmi un caffè ☕](https://www.paypal.com/paypalme/mattiagottiii).
 
+Hai domande sul programma o ti interessano ripetizioni su questi argomenti? [Contattami](mailto:mattia2002a@gmail.com?subject=TrussSolver).
+
 | Lo schema che disegni | I diagrammi che ottieni |
 | --- | --- |
 | ![Schema del tema 1 con vincoli e carichi](tutorial/01-telaio-con-biella/schema.svg) | ![Diagrammi finali di normale, taglio e momento](tutorial/01-telaio-con-biella/diagrammi.svg) |

@@ -10,6 +10,8 @@ It is made for engineering students who want to check their own work step by ste
 
 **It is free for everyone.** If it helped you and you feel like it, you can [buy me a coffee ☕](https://www.paypal.com/paypalme/mattiagottiii).
 
+Questions about the tool, or interested in private tutoring on these topics? [Contact me](mailto:mattia2002a@gmail.com?subject=TrussSolver).
+
 | The scheme you draw | The diagrams you get |
 | --- | --- |
 | ![Scheme of exam 1 with supports and loads](tutorial/01-telaio-con-biella/schema.svg) | ![Final diagrams of axial force, shear force and bending moment](tutorial/01-telaio-con-biella/diagrammi.svg) |
